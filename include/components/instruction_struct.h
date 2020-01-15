@@ -1,6 +1,6 @@
 #pragma once
 
-#include "config.h"
+#include "general.h"
 
 typedef struct _inst {
 	uint8_t bytes[MAX_INSTRUCTION_LENGTH];
@@ -8,7 +8,7 @@ typedef struct _inst {
 } instruction_t;
 
 typedef struct _inst_info {
-	instruction_t i;
+	instruction_t instruction;
 	int index;
 	int last_len;
 } instruction_info_t;
