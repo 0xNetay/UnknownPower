@@ -16,7 +16,7 @@
 #include <inttypes.h>
 #include <assert.h>
 
-// #define LINUX
+#define LINUX
 
 // Linux Include
 #ifdef LINUX
@@ -29,8 +29,8 @@
 #include <sys/wait.h>
 #endif
 
-#define POWER_PC
-// #define INTEL
+// #define POWER_PC
+#define INTEL
 
 #define STR(x) #x
 #define XSTR(x) STR(x)
