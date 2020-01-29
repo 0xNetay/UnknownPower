@@ -1,7 +1,13 @@
 cmake_minimum_required(VERSION 3.15)
 project(UnknownPower)
 
-set(CMAKE_C_STANDARD 99)
+set(CMAKE_CXX_STANDARD 14)
+
+# SET(COMPILE_FLAGS "$< -O3 -Wall -no-pie -l:libcapstone.a -o $@ -pthread")
+# SET(LINK_FLAGS    "-c $< -o $@ -Wall")
+
+# SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${COMPILE_FLAGS}")
+# SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${LINK_FLAGS}")
 
 include_directories(.)
 include_directories(include)
@@ -15,25 +21,7 @@ include_directories(src/injector)
 include_directories(src/state_handler)
 
 add_executable(UnknownPower
-        include/components/build_mode.h
-        include/components/config_struct.h
-        include/components/disassembly_struct.h
-        include/components/dummy_stack.h
-        include/components/ignore_opcode_struct.h
-        include/components/instruction_range_struct.h
-        include/components/instruction_struct.h
-        include/components/output_mode.h
-        include/components/registers_state_struct.h
-        include/components/result_struct.h
-        include/blacklist.h
-        include/config.h
-        include/general.h
-        src/builder/builder.c
-        src/builder/builder.h
-        src/fault_handler/fault_handler.c
-        src/fault_handler/fault_handler.h
-        src/global/global.c
-        src/global/global.h
+        src/low_level/fault_handler/fault_handler.c
         src/global/global_blacklist.c
         src/global/global_config.c
         src/global/global_variables.c
@@ -45,6 +33,6 @@ add_executable(UnknownPower
         src/helpers/helpers.h
         src/injector/injector.c
         src/injector/injector.h
-        src/state_handler/state_handler.c
-        src/state_handler/state_handler.h
-        main.c)
+        src/low_level/state_handler/state_handler.c
+        src/low_level/state_handler/state_handler.h
+        main.cpp src/builder/Definitions.hpp src/builder/Builder.cpp src/builder/Builder.hpp src/config/Definitions.hpp src/config/ConfigManager.cpp src/config/ConfigManager.hpp)

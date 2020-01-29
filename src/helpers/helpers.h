@@ -1,4 +1,4 @@
-#include "general.h"
+#include "general.hpp"
 
 bool is_prefix(uint8_t);
 int prefix_count(void);

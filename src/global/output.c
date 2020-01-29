@@ -215,7 +215,7 @@ void sync_fflush(FILE* f, bool force)
 #endif
 }
 
-void print_insn(FILE* f, insn_t* insn)
+void print_insn(FILE* f, instruction_t* insn)
 {
 	int i;
 	for (i=0; i<sizeof(insn->bytes); i++) {
@@ -223,7 +223,7 @@ void print_insn(FILE* f, insn_t* insn)
 	}
 }
 
-void print_range(FILE* f, range_t* range)
+void print_range(FILE* f, instruction_range_t* range)
 {
 	print_insn(f, &range->start);
 	sync_fprintf(f, ";");

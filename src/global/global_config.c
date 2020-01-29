@@ -2,41 +2,43 @@
 
 // CONFIG FOR APPLICATION
 config_t global_config = {
-    false,      // allow_exploring_more_than_one_prefix_in_search
-	0,          // max_explored_prefix
-	4,          // brute_force_byte_depth
-	0,          // seed_for_random
-	0,          // range_bytes
-	false,      // should_show_tick
-	1,          // jobs_count
-	false,      // force_core
-	0,          // core_count
-	false,      // enable_null_access
-	true,       // no_execute_support
+        false,
+        0,
+        4,
+        0,
+        0,
+        false,
+        1,
+        false,
+        0,
+        false,
+        true,
 };
 
 // RANGES FOR PROCESSOR
 #if defined(POWER_PC)
 instruction_range_t total_range={
-	.start={
+	{
 		.bytes={0x00,0x00,0x00,0x00}, 
 		.len=0
 	},
-	.end={
+	{
 		.bytes={0xff,0xff,0xff,0xff}, 
 		.len=0
 	},
-	.had_started=false
+	false
 };
 #elif defined(INTEL)
 instruction_range_t total_range={
-	.start={
-		.bytes={0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00}, 
-		.len=0},
-	.end={
-		.bytes={0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff}, 
-		.len=0},
-	.had_started=false
+	{
+		{ 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },
+		0
+    },
+	{
+		{ 0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff },
+		 0
+     },
+	false
 };
 #endif
 
