@@ -6,7 +6,7 @@
 #define UNKNOWNPOWER_BUILDER_DEFINITIONS_HPP
 
 #include <array>
-#include "general.hpp"
+#include "General.hpp"
 
 enum class BuildMode
 {

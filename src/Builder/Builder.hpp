@@ -23,6 +23,8 @@ public:
     inline BuildMode GetBuildMode() { return this->_build_mode; }
     inline void SetBuildMode(BuildMode new_mode) { this->_build_mode = new_mode; }
 
+    static bool IsPrefix(uint8_t prefix);
+
 private:
     bool Init();
     bool Init(const Instruction &other);
@@ -31,7 +33,6 @@ private:
 
     bool IncrementRangeForNext(Instruction &instruction, int marker);
 
-    bool IsPrefix(uint8_t prefix);
     size_t PrefixCount();
     bool HasDuplicatePrefix();
     bool HasOpcode(const uint8_t original_opcode[]);

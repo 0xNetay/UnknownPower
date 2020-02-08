@@ -3,7 +3,8 @@
 //
 
 #include "Builder.hpp"
-#include "config/ConfigManager.hpp"
+#include "ConfigManager/ConfigManager.hpp"
+#include "OutputManager/OutputManager.hpp"
 
 bool Builder::Init()
 {
@@ -70,13 +71,13 @@ bool Builder::BuildNextRange()
             else // For any new call, if the last instruction found a new length, we go deeper
                 // otherwise, we found the current deepest length of the current instruction
             {
-                if (ConfigManager::Instance().GetImmutableResult().length != this->_last_length &&
-                    this->_current_index < ConfigManager::Instance().GetImmutableResult().length - 1)
+                if (OutputManager::Instance().GetImmutableResult().length != this->_last_length &&
+                    this->_current_index < OutputManager::Instance().GetImmutableResult().length - 1)
                 {
                     this->_current_index++;
                 }
 
-                this->_last_length = ConfigManager::Instance().GetImmutableResult().length;
+                this->_last_length = OutputManager::Instance().GetImmutableResult().length;
 
                 this->_current_instruction.bytes[this->_current_index]++;
 
@@ -107,17 +108,20 @@ bool Builder::BuildNextRange()
     {
         if (this->HasOpcode((uint8_t*)ConfigManager::Instance().GetAtOpcodeBlacklist(i).opcode))
         {
-            switch (output)
+            switch (OutputManager::Instance().GetOutputMode())
             {
-                case TEXT:
-                    sync_fprintf(stdout, "x: "); print_mc(stdout, 16);
-                    sync_fprintf(stdout, "... (%s)\n", ConfigManager::Instance().GetAtOpcodeBlacklist(i).reason);
-                    sync_fflush(stdout, false);
+                case OutputMode::text:
+                    OutputManager::Instance().SyncPrintFormat(stdout, "x: ");
+                    OutputManager::Instance().PrintInMcToOutput(this->_current_instruction, MAX_INSTRUCTION_LENGTH, stdout);
+                    OutputManager::Instance().SyncPrintFormat(stdout, "... (%s)\n", ConfigManager::Instance().GetAtOpcodeBlacklist(i).reason);
+                    OutputManager::Instance().SyncFlushOutput(stdout, false);
                     break;
-                case RAW:
-                    ConfigManager::Instance().GetMutableResult() = {0, 0, 0, 0, 0};
-                    give_result(stdout);
+
+                case OutputMode::raw:
+                    OutputManager::Instance().GetMutableResult() = {0, 0, 0, 0, 0};
+                    OutputManager::Instance().GiveResultToOutput(this->_current_instruction, this->_build_mode, stdout);
                     break;
+
                 default:
                     assert(0);
             }
@@ -131,16 +135,18 @@ bool Builder::BuildNextRange()
     {
         if (this->HasPrefix((uint8_t*)ConfigManager::Instance().GetAtPrefixBlacklist(i).prefix))
         {
-            switch (output)
+            switch (OutputManager::Instance().GetOutputMode())
             {
-                case TEXT:
-                    sync_fprintf(stdout, "x: "); print_mc(stdout, 16);
-                    sync_fprintf(stdout, "... (%s)\n", ConfigManager::Instance().GetAtPrefixBlacklist(i).reason);
-                    sync_fflush(stdout, false);
+                case OutputMode::text:
+                    OutputManager::Instance().SyncPrintFormat(stdout, "x: ");
+                    OutputManager::Instance().PrintInMcToOutput(this->_current_instruction, MAX_INSTRUCTION_LENGTH, stdout);
+                    OutputManager::Instance().SyncPrintFormat(stdout, "... (%s)\n", ConfigManager::Instance().GetAtPrefixBlacklist(i).reason);
+                    OutputManager::Instance().SyncFlushOutput(stdout, false);
                     break;
-                case RAW:
-                    ConfigManager::Instance().GetMutableResult() = {0, 0, 0, 0, 0};
-                    give_result(stdout);
+
+                case OutputMode::raw:
+                    OutputManager::Instance().GetMutableResult() = {0, 0, 0, 0, 0};
+                    OutputManager::Instance().GiveResultToOutput(this->_current_instruction, this->_build_mode, stdout);
                     break;
                 default:
                     assert(0);
@@ -153,17 +159,20 @@ bool Builder::BuildNextRange()
     if (this->PrefixCount() > ConfigManager::Instance().GetConfig().max_explored_prefix ||
         (!ConfigManager::Instance().GetConfig().allow_exploring_more_than_one_prefix_in_search && this->HasDuplicatePrefix()))
     {
-        switch (output)
+        switch (OutputManager::Instance().GetOutputMode())
         {
-            case TEXT:
-                sync_fprintf(stdout, "x: "); print_mc(stdout, 16);
-                sync_fprintf(stdout, "... (%s)\n", "prefix violation");
-                sync_fflush(stdout, false);
+            case OutputMode::text:
+                OutputManager::Instance().SyncPrintFormat(stdout, "x: ");
+                OutputManager::Instance().PrintInMcToOutput(this->_current_instruction, MAX_INSTRUCTION_LENGTH, stdout);
+                OutputManager::Instance().SyncPrintFormat(stdout, "... (%s)\n", "prefix violation");
+                OutputManager::Instance().SyncFlushOutput(stdout, false);
                 break;
-            case RAW:
-                ConfigManager::Instance().GetMutableResult() = {0, 0, 0, 0, 0};
-                give_result(stdout);
+
+            case OutputMode::raw:
+                OutputManager::Instance().GetMutableResult() = {0, 0, 0, 0, 0};
+                OutputManager::Instance().GiveResultToOutput(this->_current_instruction, this->_build_mode, stdout);
                 break;
+
             default:
                 assert(0);
         }
@@ -370,7 +379,7 @@ size_t Builder::PrefixCount()
 {
     for (size_t i = 0; i < MAX_INSTRUCTION_LENGTH; i++)
     {
-        if (!this->IsPrefix(this->_current_instruction.bytes[i]))
+        if (!Builder::IsPrefix(this->_current_instruction.bytes[i]))
         {
             return i;
         }
@@ -387,7 +396,7 @@ bool Builder::HasDuplicatePrefix()
 
     for (size_t i = 0; i < MAX_INSTRUCTION_LENGTH; i++)
     {
-        if (this->IsPrefix(this->_current_instruction.bytes[i]))
+        if (Builder::IsPrefix(this->_current_instruction.bytes[i]))
         {
             byte_count[this->_current_instruction.bytes[i]]++;
         }
@@ -417,7 +426,7 @@ bool Builder::HasOpcode(const uint8_t original_opcode[])
 
     for (size_t i = 0; i < MAX_INSTRUCTION_LENGTH; i++)
     {
-        if (!this->IsPrefix(this->_current_instruction.bytes[i]))
+        if (!Builder::IsPrefix(this->_current_instruction.bytes[i]))
         {
             size_t j = 0;
             do
@@ -445,7 +454,7 @@ bool Builder::HasPrefix(const uint8_t original_prefix[])
 
     for (size_t i = 0; i < MAX_INSTRUCTION_LENGTH; i++)
     {
-        if (this->IsPrefix(this->_current_instruction.bytes[i]))
+        if (Builder::IsPrefix(this->_current_instruction.bytes[i]))
         {
             size_t j = 0;
             do

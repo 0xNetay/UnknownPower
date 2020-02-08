@@ -1,6 +1,6 @@
 #pragma once
 
-#include "general.hpp"
+#include "General.hpp"
 
 #ifdef LINUX
 struct  __attribute__ ((aligned(PAGE_SIZE))) DummyStack
