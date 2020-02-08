@@ -35,4 +35,4 @@ add_executable(UnknownPower
         src/injector/injector.h
         src/low_level/state_handler/state_handler.c
         src/low_level/state_handler/state_handler.h
-        main.cpp src/builder/Definitions.hpp src/builder/Builder.cpp src/builder/Builder.hpp src/config/Definitions.hpp src/config/ConfigManager.cpp src/config/ConfigManager.hpp)
+        main.cpp src/builder/Definitions.hpp src/builder/Builder.cpp src/builder/Builder.hpp src/config/Definitions.hpp src/config/ConfigManager.hpp)

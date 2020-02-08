@@ -3,6 +3,7 @@
 //
 
 #include "Builder.hpp"
+#include "config/ConfigManager.hpp"
 
 bool Builder::Init()
 {
@@ -32,11 +33,11 @@ bool Builder::BuildNextRange()
             if (!this->_had_started) // First call - init
             {
                 this->Init(this->_current_search_range.start);
-                this->_current_index = this->_config.brute_force_byte_depth - 1;
+                this->_current_index = ConfigManager::Instance().GetConfig().brute_force_byte_depth - 1;
             }
             else // Starting from deepest depth, finding the first byte that had not wrapped around
             {
-                for (this->_current_index = this->_config.brute_force_byte_depth - 1;
+                for (this->_current_index = ConfigManager::Instance().GetConfig().brute_force_byte_depth - 1;
                      this->_current_index >= 0;
                      this->_current_index--)
                 {
@@ -69,13 +70,13 @@ bool Builder::BuildNextRange()
             else // For any new call, if the last instruction found a new length, we go deeper
                 // otherwise, we found the current deepest length of the current instruction
             {
-                if (this->_result.length != this->_last_length &&
-                    this->_current_index < this->_result.length - 1)
+                if (ConfigManager::Instance().GetImmutableResult().length != this->_last_length &&
+                    this->_current_index < ConfigManager::Instance().GetImmutableResult().length - 1)
                 {
                     this->_current_index++;
                 }
 
-                this->_last_length = this->_result.length;
+                this->_last_length = ConfigManager::Instance().GetImmutableResult().length;
 
                 this->_current_instruction.bytes[this->_current_index]++;
 
@@ -102,16 +103,19 @@ bool Builder::BuildNextRange()
     this->_had_started = true;
 
     int i = 0;
-    while (opcode_blacklist[i].opcode) {
-        if (has_opcode((uint8_t*)opcode_blacklist[i].opcode)) {
-            switch (output) {
+    while (ConfigManager::Instance().GetAtOpcodeBlacklist(i).opcode)
+    {
+        if (this->HasOpcode((uint8_t*)ConfigManager::Instance().GetAtOpcodeBlacklist(i).opcode))
+        {
+            switch (output)
+            {
                 case TEXT:
                     sync_fprintf(stdout, "x: "); print_mc(stdout, 16);
-                    sync_fprintf(stdout, "... (%s)\n", opcode_blacklist[i].reason);
+                    sync_fprintf(stdout, "... (%s)\n", ConfigManager::Instance().GetAtOpcodeBlacklist(i).reason);
                     sync_fflush(stdout, false);
                     break;
                 case RAW:
-                    result=(result_t){0,0,0,0,0};
+                    ConfigManager::Instance().GetMutableResult() = {0, 0, 0, 0, 0};
                     give_result(stdout);
                     break;
                 default:
@@ -123,16 +127,19 @@ bool Builder::BuildNextRange()
     }
 
     i = 0;
-    while (prefix_blacklist[i].prefix) {
-        if (has_prefix((uint8_t*)prefix_blacklist[i].prefix)) {
-            switch (output) {
+    while (ConfigManager::Instance().GetAtPrefixBlacklist(i).prefix)
+    {
+        if (this->HasPrefix((uint8_t*)ConfigManager::Instance().GetAtPrefixBlacklist(i).prefix))
+        {
+            switch (output)
+            {
                 case TEXT:
                     sync_fprintf(stdout, "x: "); print_mc(stdout, 16);
-                    sync_fprintf(stdout, "... (%s)\n", prefix_blacklist[i].reason);
+                    sync_fprintf(stdout, "... (%s)\n", ConfigManager::Instance().GetAtPrefixBlacklist(i).reason);
                     sync_fflush(stdout, false);
                     break;
                 case RAW:
-                    result=(result_t){0,0,0,0,0};
+                    ConfigManager::Instance().GetMutableResult() = {0, 0, 0, 0, 0};
                     give_result(stdout);
                     break;
                 default:
@@ -143,16 +150,18 @@ bool Builder::BuildNextRange()
         i++;
     }
 
-    if (prefix_count() > this->_config.max_prefix ||
-        (!this->_config.allow_dup_prefix && has_dup_prefix())) {
-        switch (output) {
+    if (this->PrefixCount() > ConfigManager::Instance().GetConfig().max_explored_prefix ||
+        (!ConfigManager::Instance().GetConfig().allow_exploring_more_than_one_prefix_in_search && this->HasDuplicatePrefix()))
+    {
+        switch (output)
+        {
             case TEXT:
                 sync_fprintf(stdout, "x: "); print_mc(stdout, 16);
                 sync_fprintf(stdout, "... (%s)\n", "prefix violation");
                 sync_fflush(stdout, false);
                 break;
             case RAW:
-                result=(result_t){0,0,0,0,0};
+                ConfigManager::Instance().GetMutableResult() = {0, 0, 0, 0, 0};
                 give_result(stdout);
                 break;
             default:
@@ -161,8 +170,6 @@ bool Builder::BuildNextRange()
         return this->BuildNextInstruction();
     }
 
-    /* early exit */
-    /* check if we are at, or past, the end instruction */
     if (memcmp(this->_current_instruction.bytes.data(),
             this->_current_search_range.end.bytes.data(),
             sizeof(this->_current_instruction.bytes)) >= 0)
@@ -170,7 +177,6 @@ bool Builder::BuildNextRange()
         return false;
     }
 
-    /* search based exit */
     switch (this->GetBuildMode())
     {
         case BuildMode::Random:
@@ -216,7 +222,7 @@ bool Builder::BuildNextInstruction()
                 this->_current_search_range.start = *this->_range_marker;
                 this->_current_search_range.end = *this->_range_marker;
 
-                if (!IncrementRangeForNext(this->_current_search_range.end, this->_config.range_bytes))
+                if (!IncrementRangeForNext(this->_current_search_range.end, ConfigManager::Instance().GetConfig().range_bytes))
                 {
                     // if increment rolled over, set to end
                     this->_current_search_range.end = TOTAL_RANGE.end;
@@ -339,3 +345,122 @@ bool Builder::DropRanges()
     }
 }
 
+bool Builder::IsPrefix(uint8_t prefix)
+{
+    return
+            prefix==0xf0 || /* lock */
+            prefix==0xf2 || /* repne / bound */
+            prefix==0xf3 || /* rep */
+            prefix==0x2e || /* cs / branch taken */
+            prefix==0x36 || /* ss / branch not taken */
+            prefix==0x3e || /* ds */
+            prefix==0x26 || /* es */
+            prefix==0x64 || /* fs */
+            prefix==0x65 || /* gs */
+            prefix==0x66 || /* data */
+            prefix==0x67    /* addr */
+#if __x86_64__
+            || (prefix >= 0x40 && prefix <= 0x4f) /* rex */
+#endif
+            ;
+            // TODO: POWERPC
+}
+
+size_t Builder::PrefixCount()
+{
+    for (size_t i = 0; i < MAX_INSTRUCTION_LENGTH; i++)
+    {
+        if (!this->IsPrefix(this->_current_instruction.bytes[i]))
+        {
+            return i;
+        }
+    }
+    return 0;
+}
+
+bool Builder::HasDuplicatePrefix()
+{
+    static constexpr size_t MAX_BYTES_COUNT = 0xff;
+    static size_t byte_count[MAX_BYTES_COUNT];
+
+    memset(byte_count, 0, sizeof(byte_count));
+
+    for (size_t i = 0; i < MAX_INSTRUCTION_LENGTH; i++)
+    {
+        if (this->IsPrefix(this->_current_instruction.bytes[i]))
+        {
+            byte_count[this->_current_instruction.bytes[i]]++;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    for (size_t byte : byte_count)
+    {
+        if (byte > 1)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool Builder::HasOpcode(const uint8_t original_opcode[])
+{
+    if (original_opcode == nullptr)
+    {
+        return false;
+    }
+
+    for (size_t i = 0; i < MAX_INSTRUCTION_LENGTH; i++)
+    {
+        if (!this->IsPrefix(this->_current_instruction.bytes[i]))
+        {
+            size_t j = 0;
+            do
+            {
+                if ((i + j) >= MAX_INSTRUCTION_LENGTH || original_opcode[j] != this->_current_instruction.bytes[i + j])
+                {
+                    return false;
+                }
+
+                j++;
+            } while (original_opcode[j]);
+
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Builder::HasPrefix(const uint8_t original_prefix[])
+{
+    if (original_prefix == nullptr)
+    {
+        return false;
+    }
+
+    for (size_t i = 0; i < MAX_INSTRUCTION_LENGTH; i++)
+    {
+        if (this->IsPrefix(this->_current_instruction.bytes[i]))
+        {
+            size_t j = 0;
+            do
+            {
+                if (this->_current_instruction.bytes[i] == original_prefix[j])
+                {
+                    return true;
+                }
+                j++;
+            } while (original_prefix[j]);
+        }
+        else
+        {
+            return false;
+        }
+    }
+    return false;
+}

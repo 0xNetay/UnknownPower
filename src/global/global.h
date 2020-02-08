@@ -12,20 +12,16 @@
 #include "components/disassembly_struct.hpp"
 #include "helpers.h"
 
-// Global Config
-extern config_t             global_config;
-extern registers_state_t    injected_reg_state;
-extern ignore_opcode_t      opcode_blacklist[MAX_BLACKLISTED_OPCODES];
-extern ignore_prefix_t      prefix_blacklist[MAX_BLACKLISTED_PREFIXES];
+
+// For Output Manager
+OutputMode _output_mode = OutputMode::raw;
+inline void SetOutputMode(const OutputMode& output_mode) { _output_mode = output_mode; }
+inline const OutputMode& GetOutputMode() { return _output_mode; }
+
 
 // Global Variables
-extern instruction_info_t   current_instruction;
 extern void*                packet_buffer;
 extern char*                packet;
-extern instruction_t       *current_range_length_marker;
-extern instruction_range_t  current_search_range;
-extern instruction_range_t  total_searched_range;
-extern int                  current_expected_length;
 
 // Linux Only Variables
 #ifdef LINUX
@@ -33,8 +29,6 @@ extern char         stack[SIGSTKSZ];
 extern stack_t      ss;
 
 extern mcontext_t   fault_context;
-
-extern result_t     result;
 
 extern pthread_mutex_t* pool_mutex;
 extern pthread_mutex_t* output_mutex;

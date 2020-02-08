@@ -11,15 +11,8 @@
 class Builder
 {
 public:
-    inline Builder(Config &config, Result &result, pthread_mutex_t* pool_mutex) :
-        _config(config), _result(result), _pool_mutex(pool_mutex)
-    {
-
-    }
-    inline ~Builder()
-    {
-        this->DropRanges();
-    }
+    inline explicit Builder(pthread_mutex_t* pool_mutex) : _pool_mutex(pool_mutex) {}
+    inline ~Builder() { this->DropRanges(); }
 
     bool CreateRanges();
     bool DropRanges();
@@ -38,16 +31,20 @@ private:
 
     bool IncrementRangeForNext(Instruction &instruction, int marker);
 
-    Config &_config;
-    Result &_result;
+    bool IsPrefix(uint8_t prefix);
+    size_t PrefixCount();
+    bool HasDuplicatePrefix();
+    bool HasOpcode(const uint8_t original_opcode[]);
+    bool HasPrefix(const uint8_t original_prefix[]);
+
     pthread_mutex_t* _pool_mutex;
 
-    Instruction _current_instruction;
+    Instruction _current_instruction = {};
     int _current_index = 0;
     int _last_length = 0;
 
     Instruction* _range_marker = nullptr;
-    InstructionRange _current_search_range;
+    InstructionRange _current_search_range = {};
 
     bool _had_started = false;
     BuildMode _build_mode = BuildMode::TunnelMinMax;
