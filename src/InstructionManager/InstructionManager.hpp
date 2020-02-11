@@ -2,17 +2,17 @@
 // Created by student on 1/29/20.
 //
 
-#ifndef UNKNOWNPOWER_BUILDER_HPP
-#define UNKNOWNPOWER_BUILDER_HPP
+#ifndef UNKNOWNPOWER_INSTRUCTIONMANAGER_HPP
+#define UNKNOWNPOWER_INSTRUCTIONMANAGER_HPP
 
 #include "Definitions.hpp"
-#include "config/Definitions.hpp"
+#include "ConfigManager/Definitions.hpp"
 
-class Builder
+class InstructionManager
 {
 public:
-    inline explicit Builder(pthread_mutex_t* pool_mutex) : _pool_mutex(pool_mutex) {}
-    inline ~Builder() { this->DropRanges(); }
+    inline explicit InstructionManager(pthread_mutex_t* pool_mutex) : _pool_mutex(pool_mutex) {}
+    inline ~InstructionManager() { this->DropRanges(); }
 
     bool CreateRanges();
     bool DropRanges();
@@ -51,4 +51,4 @@ private:
     BuildMode _build_mode = BuildMode::TunnelMinMax;
 };
 
-#endif //UNKNOWNPOWER_BUILDER_HPP
+#endif //UNKNOWNPOWER_INSTRUCTIONMANAGER_HPP

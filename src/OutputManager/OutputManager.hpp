@@ -6,7 +6,7 @@
 #define UNKNOWNPOWER_OUTPUTMANAGER_HPP
 
 #include "Definitions.hpp"
-#include "Builder/Definitions.hpp"
+#include "InstructionManager/Definitions.hpp"
 
 class OutputManager
 {
@@ -31,8 +31,7 @@ public:
     inline const void* GetImmutablePacketBuffer() { return _packet_buffer; }
     inline void* GetMutablePacketBuffer() { return _packet_buffer; }
 
-#ifdef LINUX
-    #   if USE_CAPSTONE
+#if USE_CAPSTONE
     inline void SetCapstoneHandler(const csh& capstone_handle) { _capstone_handle = capstone_handle; }
     inline const csh& GetImmutableCapstoneHandler() { return _capstone_handle; }
     inline csh& GetMutableCapstoneHandler() { return _capstone_handle; }
@@ -43,7 +42,6 @@ public:
 
     inline const DisassemblyInfo& GetImmutableDisassemblyInfo() { return _disassembly_info; }
     inline DisassemblyInfo& GetMutableDisassemblyInfo() { return _disassembly_info; }
-#   endif
 #endif
 
     void PrintInMcToOutput(const Instruction& instruction, size_t instruction_length, FILE* output_file);
@@ -67,13 +65,12 @@ private:
     Result _current_result = {};
     OutputMode _output_mode = OutputMode::text;
 
-#ifdef LINUX
-    #   if USE_CAPSTONE
+#if USE_CAPSTONE
     csh      _capstone_handle = {};
     cs_insn* _capstone_insn = nullptr;
     DisassemblyInfo _disassembly_info = {};
-#   endif
 #endif
+
 
     static constexpr size_t LINE_BUFFER_SIZE = 256;
     static constexpr size_t BUFFER_LINES = 16;

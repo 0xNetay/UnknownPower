@@ -4,13 +4,13 @@
 
 #include "OutputManager.hpp"
 #include "ConfigManager/ConfigManager.hpp"
-#include "Builder/Builder.hpp"
+#include "InstructionManager/InstructionManager.hpp"
 
 void OutputManager::PrintInMcToOutput(const Instruction& instruction, size_t instruction_length, FILE* output_file)
 {
     bool prefix_flag = false;
     
-    if (!Builder::IsPrefix(instruction.bytes[0])) 
+    if (!InstructionManager::IsPrefix(instruction.bytes[0]))
     {
         this->SyncPrintFormat(output_file, " ");
         prefix_flag = true;
@@ -21,8 +21,8 @@ void OutputManager::PrintInMcToOutput(const Instruction& instruction, size_t ins
         this->SyncPrintFormat(output_file, "%02x", instruction.bytes[i]);
         
         if (!prefix_flag && i < (MAX_INSTRUCTION_LENGTH - 1) &&
-            Builder::IsPrefix(instruction.bytes[i]) && 
-            !Builder::IsPrefix(instruction.bytes[i + 1])) 
+            InstructionManager::IsPrefix(instruction.bytes[i]) &&
+            !InstructionManager::IsPrefix(instruction.bytes[i + 1]))
         {
             this->SyncPrintFormat(output_file, " ");
             prefix_flag = true;
@@ -151,7 +151,6 @@ void OutputManager::SyncWriteBuffer(const void* output_buffer, size_t single_ele
 
 void OutputManager::SyncFlushOutput(FILE* output_file, bool force)
 {
-#ifdef LINUX
     if (output_file == stdout)
     {
         this->_stdout_sync_counter++;
@@ -190,7 +189,6 @@ void OutputManager::SyncFlushOutput(FILE* output_file, bool force)
     {
         assert(0);
     }
-#endif
 }
 
 

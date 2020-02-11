@@ -2,11 +2,11 @@
 // Created by student on 1/29/20.
 //
 
-#include "Builder.hpp"
+#include "InstructionManager.hpp"
 #include "ConfigManager/ConfigManager.hpp"
 #include "OutputManager/OutputManager.hpp"
 
-bool Builder::Init()
+bool InstructionManager::Init()
 {
     this->_current_instruction.bytes = { 0 };
     this->_current_instruction.length = 0;
@@ -15,7 +15,7 @@ bool Builder::Init()
     return true;
 }
 
-bool Builder::Init(const Instruction &other)
+bool InstructionManager::Init(const Instruction &other)
 {
     if (!this->Init())
     {
@@ -26,7 +26,7 @@ bool Builder::Init(const Instruction &other)
     return true;
 }
 
-bool Builder::BuildNextRange()
+bool InstructionManager::BuildNextRange()
 {
     switch (this->GetBuildMode())
     {
@@ -198,7 +198,7 @@ bool Builder::BuildNextRange()
     }
 }
 
-bool Builder::BuildNextInstruction()
+bool InstructionManager::BuildNextInstruction()
 {
     bool result = true;
 
@@ -256,7 +256,7 @@ bool Builder::BuildNextInstruction()
     return result;
 }
 
-bool Builder::BuildRandomInstruction()
+bool InstructionManager::BuildRandomInstruction()
 {
     static uint8_t inclusive_end[MAX_INSTRUCTION_LENGTH];
 
@@ -307,7 +307,7 @@ bool Builder::BuildRandomInstruction()
     return true;
 }
 
-bool Builder::IncrementRangeForNext(Instruction &instruction, int marker)
+bool InstructionManager::IncrementRangeForNext(Instruction &instruction, int marker)
 {
     // Zeroing the instruction bytes from marker to end
     for (int i = marker; i < sizeof(Instruction::bytes); i++)
@@ -336,7 +336,7 @@ bool Builder::IncrementRangeForNext(Instruction &instruction, int marker)
     return i >= 0;
 }
 
-bool Builder::CreateRanges()
+bool InstructionManager::CreateRanges()
 {
     if (_range_marker == nullptr)
     {
@@ -346,7 +346,7 @@ bool Builder::CreateRanges()
     }
 }
 
-bool Builder::DropRanges()
+bool InstructionManager::DropRanges()
 {
     if (this->_range_marker != nullptr)
     {
@@ -354,7 +354,7 @@ bool Builder::DropRanges()
     }
 }
 
-bool Builder::IsPrefix(uint8_t prefix)
+bool InstructionManager::IsPrefix(uint8_t prefix)
 {
     return
             prefix==0xf0 || /* lock */
@@ -375,11 +375,11 @@ bool Builder::IsPrefix(uint8_t prefix)
             // TODO: POWERPC
 }
 
-size_t Builder::PrefixCount()
+size_t InstructionManager::PrefixCount()
 {
     for (size_t i = 0; i < MAX_INSTRUCTION_LENGTH; i++)
     {
-        if (!Builder::IsPrefix(this->_current_instruction.bytes[i]))
+        if (!InstructionManager::IsPrefix(this->_current_instruction.bytes[i]))
         {
             return i;
         }
@@ -387,7 +387,7 @@ size_t Builder::PrefixCount()
     return 0;
 }
 
-bool Builder::HasDuplicatePrefix()
+bool InstructionManager::HasDuplicatePrefix()
 {
     static constexpr size_t MAX_BYTES_COUNT = 0xff;
     static size_t byte_count[MAX_BYTES_COUNT];
@@ -396,7 +396,7 @@ bool Builder::HasDuplicatePrefix()
 
     for (size_t i = 0; i < MAX_INSTRUCTION_LENGTH; i++)
     {
-        if (Builder::IsPrefix(this->_current_instruction.bytes[i]))
+        if (InstructionManager::IsPrefix(this->_current_instruction.bytes[i]))
         {
             byte_count[this->_current_instruction.bytes[i]]++;
         }
@@ -417,7 +417,7 @@ bool Builder::HasDuplicatePrefix()
     return false;
 }
 
-bool Builder::HasOpcode(const uint8_t original_opcode[])
+bool InstructionManager::HasOpcode(const uint8_t original_opcode[])
 {
     if (original_opcode == nullptr)
     {
@@ -426,7 +426,7 @@ bool Builder::HasOpcode(const uint8_t original_opcode[])
 
     for (size_t i = 0; i < MAX_INSTRUCTION_LENGTH; i++)
     {
-        if (!Builder::IsPrefix(this->_current_instruction.bytes[i]))
+        if (!InstructionManager::IsPrefix(this->_current_instruction.bytes[i]))
         {
             size_t j = 0;
             do
@@ -445,7 +445,7 @@ bool Builder::HasOpcode(const uint8_t original_opcode[])
     return false;
 }
 
-bool Builder::HasPrefix(const uint8_t original_prefix[])
+bool InstructionManager::HasPrefix(const uint8_t original_prefix[])
 {
     if (original_prefix == nullptr)
     {
@@ -454,7 +454,7 @@ bool Builder::HasPrefix(const uint8_t original_prefix[])
 
     for (size_t i = 0; i < MAX_INSTRUCTION_LENGTH; i++)
     {
-        if (Builder::IsPrefix(this->_current_instruction.bytes[i]))
+        if (InstructionManager::IsPrefix(this->_current_instruction.bytes[i]))
         {
             size_t j = 0;
             do

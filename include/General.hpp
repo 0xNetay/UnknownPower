@@ -1,4 +1,9 @@
-#pragma once
+//
+// Created by student on 1/29/20.
+//
+
+#ifndef UNKNOWNPOWER_GENERAL_HPP
+#define UNKNOWNPOWER_GENERAL_HPP
 
 #define _GNU_SOURCE
 
@@ -16,10 +21,7 @@
 #include <inttypes.h>
 #include <assert.h>
 
-#define LINUX
-
-// Linux Include
-#ifdef LINUX
+// Linux-Only Includes
 #include <unistd.h>
 #include <execinfo.h>
 #include <ucontext.h>
@@ -27,10 +29,6 @@
 #include <sched.h>
 #include <pthread.h>
 #include <sys/wait.h>
-#endif
-
-// #define POWER_PC
-#define INTEL
 
 #define STR(x) #x
 #define XSTR(x) STR(x)
@@ -50,25 +48,28 @@
 #define USE_TF true
 
 // Instruction Minimum Length. Intel is 1, PowerPC is 4
-#if defined(POWER_PC)
+#if PROCESSOR == POWER_PC
 #	define MIN_INSTRUCTION_LENGTH 4
-#elif defined(INTEL)
+#elif PROCESSOR == INTEL
 #	define MIN_INSTRUCTION_LENGTH 1
+#else
+#   static_assert(false, "Unknown Processor");
 #endif
 
 // Instruction Maximum Length. Intel is 15, PowerPC is 4
-#if defined(POWER_PC)
+#if PROCESSOR == POWER_PC
 #	define MAX_INSTRUCTION_LENGTH 4
-#elif defined(INTEL)
+#	define JUMP_OR_UNDETERMINED_INSTRUCTION_LENGTH 4
+#elif PROCESSOR == INTEL
 #	define MAX_INSTRUCTION_LENGTH 15
-#	define JUMP_INSTRUCTION_LENGTH 16
+#	define JUMP_OR_UNDETERMINED_INSTRUCTION_LENGTH 16
 #endif
 
 // Size of our blacklisted (ignored) opcodes array
-#if defined(POWER_PC)
+#if PROCESSOR == POWER_PC
 #	define MAX_BLACKLISTED_OPCODES  128
 #	define MAX_BLACKLISTED_PREFIXES 16
-#elif defined(INTEL)
+#elif PROCESSOR == INTEL
 #	define MAX_BLACKLISTED_OPCODES  128
 #	define MAX_BLACKLISTED_PREFIXES 16
 #endif
@@ -77,13 +78,7 @@
 #define TICK_MASK 0xffff
 #define RAW_REPORT_INSN_BYTES 16
 
-#ifdef LINUX
-#	define USE_CAPSTONE true
-#else
-#	define USE_CAPSTONE false
-#endif
-
-#if USE_CAPSTONE && defined(LINUX)
+#if USE_CAPSTONE
 	#include <capstone/capstone.h>
 	#if __x86_64__
 		#define CS_MODE CS_MODE_64
@@ -98,3 +93,5 @@
 #	define RAW_REPORT_DISAS_LEN true
 #	define RAW_REPORT_DISAS_VAL true
 #endif
+
+#endif //UNKNOWNPOWER_GENERAL_HPP

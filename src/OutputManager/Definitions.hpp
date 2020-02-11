@@ -10,8 +10,6 @@
 // ----------------
 // Output
 // ----------------
-
-#ifdef LINUX
 struct __attribute__ ((packed)) Result
 {
     uint32_t valid;
@@ -20,7 +18,6 @@ struct __attribute__ ((packed)) Result
     uint32_t si_code;
     uint32_t address;
 };
-#endif
 
 enum class OutputMode
 {
@@ -28,7 +25,6 @@ enum class OutputMode
     raw,
 };
 
-#ifdef LINUX
 struct __attribute__ ((packed)) DisassemblyInfo
 {
 #if RAW_REPORT_DISAS_MNE
@@ -44,6 +40,5 @@ struct __attribute__ ((packed)) DisassemblyInfo
     int value;
 #endif
 };
-#endif
 
 #endif //UNKNOWNPOWER_OUTPUT_DEFINITIONS_HPP
