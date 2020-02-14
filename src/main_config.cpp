@@ -2,9 +2,12 @@
 // Created by student on 2/11/20.
 //
 
+#include "ConfigManager/Definitions.hpp"
+#include "InstructionManager/Definitions.hpp"
 
 // CONFIG FOR APPLICATION
-extern config_t global_config = {
+Config global_config =
+{
         false,
         0,
         4,
@@ -18,72 +21,44 @@ extern config_t global_config = {
         true,
 };
 
-// RANGES FOR PROCESSOR
-#if defined(POWER_PC)
-extern instruction_range_t total_range={
-        {
-                .bytes={0x00,0x00,0x00,0x00},
-                .len=0
-        },
-        {
-                .bytes={0xff,0xff,0xff,0xff},
-                .len=0
-        },
-        false
-};
-#elif defined(INTEL)
-extern instruction_range_t total_range={
-	{
-		{ 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },
-		0
-    },
-	{
-		{ 0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff },
-		 0
-     },
-	false
-};
-#endif
-
 // REGISTERS STATE FOR PROCESSOR
-#if defined(POWER_PC)
-extern registers_state_t injected_reg_state = {
-        .gpr0 = 0,
-        .gpr1 = 0,
-        .gpr2 = 0,
-        .gpr3 = 0,
-        .gpr4 = 0,
-        .gpr5 = 0,
-        .gpr6 = 0,
-        .gpr7 = 0,
-        .gpr8 = 0,
-        .gpr9 = 0,
-        .gpr10 = 0,
-        .gpr11 = 0,
-        .gpr12 = 0,
-        .gpr13 = 0,
-        .gpr14 = 0,
-        .gpr15 = 0,
-        .gpr16 = 0,
-        .gpr17 = 0,
-        .gpr18 = 0,
-        .gpr19 = 0,
-        .gpr20 = 0,
-        .gpr21 = 0,
-        .gpr22 = 0,
-        .gpr23 = 0,
-        .gpr24 = 0,
-        .gpr25 = 0,
-        .gpr26 = 0,
-        .gpr27 = 0,
-        .gpr28 = 0,
-        .gpr29 = 0,
-        .gpr30 = 0,
-        .gpr31 = 0,
-};
-#elif defined(INTEL)
+RegState injected_reg_state =
+{
+#if PROCESSOR == POWER_PC
+    .gpr0 = 0,
+    .gpr1 = 0,
+    .gpr2 = 0,
+    .gpr3 = 0,
+    .gpr4 = 0,
+    .gpr5 = 0,
+    .gpr6 = 0,
+    .gpr7 = 0,
+    .gpr8 = 0,
+    .gpr9 = 0,
+    .gpr10 = 0,
+    .gpr11 = 0,
+    .gpr12 = 0,
+    .gpr13 = 0,
+    .gpr14 = 0,
+    .gpr15 = 0,
+    .gpr16 = 0,
+    .gpr17 = 0,
+    .gpr18 = 0,
+    .gpr19 = 0,
+    .gpr20 = 0,
+    .gpr21 = 0,
+    .gpr22 = 0,
+    .gpr23 = 0,
+    .gpr24 = 0,
+    .gpr25 = 0,
+    .gpr26 = 0,
+    .gpr27 = 0,
+    .gpr28 = 0,
+    .gpr29 = 0,
+    .gpr30 = 0,
+    .gpr31 = 0,
+#elif PROCESSOR == INTEL
 #	if __x86_64__
-extern registers_state_t injected_reg_state = {
 	.rax=0,
 	.rbx=0,
 	.rcx=0,
@@ -100,9 +75,7 @@ extern registers_state_t injected_reg_state = {
 	.r15=0,
 	.rbp=0,
 	.rsp=0,
-};
 #	else
-extern registers_state_t injected_reg_state = {
 	.eax=0,
 	.ebx=0,
 	.ecx=0,
@@ -111,6 +84,6 @@ extern registers_state_t injected_reg_state = {
 	.edi=0,
 	.ebp=0,
 	.esp=0,
-};
 #	endif
 #endif
+};

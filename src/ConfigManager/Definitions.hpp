@@ -14,14 +14,14 @@
 struct Config
 {
     bool allow_exploring_more_than_one_prefix_in_search;
-    int max_explored_prefix;
-    int brute_force_byte_depth;
+    size_t max_explored_prefix;
+    size_t brute_force_byte_depth;
     long seed_for_random;
-    int range_bytes;
+    size_t range_bytes;
     bool should_show_tick;
-    int jobs_count;
+    size_t jobs_count;
     bool force_core;
-    int core_count;
+    size_t core_count;
     bool enable_null_access;
     bool no_execute_support;
 };
@@ -34,7 +34,7 @@ struct Config
 // We set those registers to a specific state to return to.
 struct RegState
 {
-#if defined(POWER_PC)
+#if PROCESSOR == POWER_PC
     uint32_t gpr0;
     uint32_t gpr1;
     uint32_t gpr2;
@@ -68,7 +68,7 @@ struct RegState
     uint32_t gpr30;
     uint32_t gpr31;
 
-#elif defined(INTEL)
+#elif PROCESSOR == INTEL
 #	if __x86_64__
     uint64_t rax;
     uint64_t rbx;
@@ -106,8 +106,8 @@ struct RegState
 
 struct IgnoredOpcode
 {
-    char* opcode;
-    char* reason;
+    const char* opcode;
+    const char* reason;
 };
 
 struct IgnoredPrefix

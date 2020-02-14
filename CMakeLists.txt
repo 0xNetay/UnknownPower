@@ -3,11 +3,11 @@ project(UnknownPower)
 
 set(CMAKE_CXX_STANDARD 14)
 
-# SET(COMPILE_FLAGS "$< -O3 -Wall -no-pie -l:libcapstone.a -o $@ -pthread")
-# SET(LINK_FLAGS    "-c $< -o $@ -Wall")
+SET(COMPILE_FLAGS "-Wall")
+SET(LINK_FLAGS "-O3 -Wall -no-pie -l:libcapstone.a -pthread")
 
-# SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${COMPILE_FLAGS}")
-# SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${LINK_FLAGS}")
+SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${COMPILE_FLAGS}")
+SET(CMAKE_EXE_LINKER_FLAGS  "${LINK_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}")
 
 add_definitions(-DINTEL=0 -DPOWER_PC=1)
 add_definitions(-DPROCESSOR=INTEL)

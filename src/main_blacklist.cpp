@@ -2,27 +2,31 @@
 // Created by student on 2/11/20.
 //
 
+#include "ConfigManager/Definitions.hpp"
 
-#if defined(INTEL)
-extern ignore_opcode_t      opcode_blacklist[MAX_BLACKLISTED_OPCODES] = {
+IgnoredOpcode opcode_blacklist[MAX_BLACKLISTED_OPCODES] =
+{
+#if PROCESSOR == POWER_PC
+        // TODO: POWERPC
+#elif PROCESSOR == INTEL
         { "\x0f\x34", "sysenter" },
         { "\x0f\xa1", "pop fs" },
         { "\x0f\xa9", "pop gs" },
         { "\x8e", "mov seg" },
         { "\xc8", "enter" },
-#if !__x86_64__
+#   if !__x86_64__
 /* vex in 64 (though still can be vex in 32...) */
 	{ "\xc5", "lds" },
 	{ "\xc4", "les" },
-#endif
+#   endif
         { "\x0f\xb2", "lss" },
         { "\x0f\xb4", "lfs" },
         { "\x0f\xb5", "lgs" },
-#if __x86_64__
+#   if __x86_64__
         /* 64 bit only - intel "discourages" using this without a rex* prefix, and
          * so capstone doesn't parse it */
         { "\x63", "movsxd" },
-#endif
+#   endif
         /* segfaulting with various "mov sp" (always sp) in random synthesizing, too
          * tired to figure out why: 66 bc7453 */
         { "\xbc", "mov sp" },
@@ -50,24 +54,21 @@ extern ignore_opcode_t      opcode_blacklist[MAX_BLACKLISTED_OPCODES] = {
         /* ud2 is an undefined opcode, and messes up a length differential search
          * b/c of the fault it throws */
         { "\x0f\xb9", "ud2" },
+#endif
+
         { NULL, NULL }
 };
 
-extern  ignore_prefix_t prefix_blacklist[MAX_BLACKLISTED_PREFIXES]={
-#if !__x86_64__
+IgnoredPrefix prefix_blacklist[MAX_BLACKLISTED_PREFIXES] =
+{
+#if PROCESSOR == POWER_PC
+        // TODO: POWERPC
+#elif PROCESSOR == INTEL
+#   if !__x86_64__
 /* avoid overwriting tls or something in 32 bit code */
 	{ "\x65", "gs" },
+#   endif
 #endif
+
         { NULL, NULL }
 };
-
-#elif defined(POWER_PC)
-
-extern  ignore_opcode_t      prefix_blacklist[MAX_BLACKLISTED_OPCODES] = {
-	{ NULL, NULL }
-};
-
-extern  ignore_prefix_t prefix_blacklist[MAX_BLACKLISTED_PREFIXES] = {
-	{ NULL, NULL }
-};
-#endif

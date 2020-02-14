@@ -8,20 +8,132 @@
 #include "OutputManager/OutputManager.hpp"
 
 bool ProcessorManager::_is_first = true;
-DummyStack ProcessorManager::_dummy_stack = {};
 mcontext_t ProcessorManager::_fault_context = {};
 
 void* ProcessorManager::_packet_buffer = nullptr;
 char* ProcessorManager::_packet = nullptr;
 
-char ProcessorManager::_debug;
-char ProcessorManager::_resume;
-char ProcessorManager::_preamble_start;
-char ProcessorManager::_preamble_end;
+extern char debug;
+extern char resume;
+extern char preamble_start;
+extern char preamble_end;
+DummyStack dummy_stack = {};
 
-void ProcessorManager::InjectInstructionToProcessor(int instruction_length)
+void ProcessorManager::InjectInstructionToProcessor(const Instruction& instruction)
 {
-    // TODO
+    size_t preamble_length = (&preamble_end - &preamble_start);
+
+#if !USE_TF
+    preamble_length=0;
+#endif
+
+    ProcessorManager::_packet =
+        reinterpret_cast<char*>(ProcessorManager::_packet_buffer) + PAGE_SIZE - instruction.length - preamble_length;
+
+    for (size_t i = 0; i < preamble_length; i++)
+    {
+        ProcessorManager::_packet[i] = reinterpret_cast<char*>(&preamble_start)[i];
+    }
+
+    for (size_t i = 0; (i < MAX_INSTRUCTION_LENGTH) && (i < instruction.length); i++)
+    {
+        ProcessorManager::_packet[i + preamble_length] = instruction.bytes[i];
+    }
+
+    if (ConfigManager::Instance().GetConfig().enable_null_access)
+    {
+        /* without this we need to blacklist any instruction that modifies esp */
+        void* p = NULL;
+        memset(p, 0, PAGE_SIZE);
+    }
+
+    dummy_stack.dummy_stack_lo[0] = 0;
+
+    if (ProcessorManager::_is_first)
+    {
+        ProcessorManager::ConfigureSignalHandler();
+        ProcessorManager::_is_first = false;
+        __asm__ __volatile__ ("ud2\n"); // Create a first fault
+    }
+
+    ProcessorManager::ConfigureSignalHandler();
+
+    char* packet = ProcessorManager::_packet;
+    RegState inject_state = ConfigManager::Instance().GetRegState();
+
+#if PROCESSOR == POWER_PC
+    // TODO: POWERPC
+#elif PROCESSOR == INTEL
+#   if __x86_64__
+    __asm__ __volatile__ ("\
+			mov %[rax], %%rax \n\
+			mov %[rbx], %%rbx \n\
+			mov %[rcx], %%rcx \n\
+			mov %[rdx], %%rdx \n\
+			mov %[rsi], %%rsi \n\
+			mov %[rdi], %%rdi \n\
+			mov %[r8],  %%r8  \n\
+			mov %[r9],  %%r9  \n\
+			mov %[r10], %%r10 \n\
+			mov %[r11], %%r11 \n\
+			mov %[r12], %%r12 \n\
+			mov %[r13], %%r13 \n\
+			mov %[r14], %%r14 \n\
+			mov %[r15], %%r15 \n\
+			mov %[rbp], %%rbp \n\
+			mov %[rsp], %%rsp \n\
+			jmp *%[packet]    \n\
+			"
+            :
+            :   [rax]"m"(inject_state.rax),
+                [rbx]"m"(inject_state.rbx),
+                [rcx]"m"(inject_state.rcx),
+                [rdx]"m"(inject_state.rdx),
+                [rsi]"m"(inject_state.rsi),
+                [rdi]"m"(inject_state.rdi),
+                [r8]"m"(inject_state.r8),
+                [r9]"m"(inject_state.r9),
+                [r10]"m"(inject_state.r10),
+                [r11]"m"(inject_state.r11),
+                [r12]"m"(inject_state.r12),
+                [r13]"m"(inject_state.r13),
+                [r14]"m"(inject_state.r14),
+                [r15]"m"(inject_state.r15),
+                [rbp]"m"(inject_state.rbp),
+                [rsp]"i"(&dummy_stack.dummy_stack_lo),
+                [packet]"m"(packet)
+    );
+#   else
+    __asm__ __volatile__ ("\
+			mov %[eax], %%eax \n\
+			mov %[ebx], %%ebx \n\
+			mov %[ecx], %%ecx \n\
+			mov %[edx], %%edx \n\
+			mov %[esi], %%esi \n\
+			mov %[edi], %%edi \n\
+			mov %[ebp], %%ebp \n\
+			mov %[esp], %%esp \n\
+			jmp *%[packet]    \n\
+			"
+			:
+			:   [eax]"m"(inject_state.eax),
+			    [ebx]"m"(inject_state.ebx),
+			    [ecx]"m"(inject_state.ecx),
+			    [edx]"m"(inject_state.edx),
+			    [esi]"m"(inject_state.esi),
+			    [edi]"m"(inject_state.edi),
+			    [ebp]"m"(inject_state.ebp),
+			    [esp]"i"(&dummy_stack->dummy_stack_lo),
+			    [packet]"m"(packet)
+			);
+#   endif
+#endif
+    __asm__ __volatile__ ("\
+			.global resume   \n\
+			resume:          \n\
+			"
+    );
+    ;
 }
 
 void ProcessorManager::PinCore()
@@ -43,7 +155,7 @@ void ProcessorManager::ConfigureSignalHandler()
 {
     struct sigaction signal_action = {};
 
-    if (_is_first)
+    if (ProcessorManager::_is_first)
     {
         signal_action.sa_sigaction = ProcessorManager::FirstStateHandler;
     }
@@ -52,7 +164,7 @@ void ProcessorManager::ConfigureSignalHandler()
         signal_action.sa_sigaction = ProcessorManager::FaultHandler;
     }
 
-    signal_action.sa_flags=SA_SIGINFO|SA_ONSTACK;
+    signal_action.sa_flags = SA_SIGINFO | SA_ONSTACK;
 
     sigfillset(&signal_action.sa_mask);
 
@@ -77,14 +189,14 @@ void ProcessorManager::FaultHandler(int signal_number, siginfo_t* signal_info, v
 
     size_t instruction_length;
     ucontext_t* signal_context = reinterpret_cast<ucontext_t*>(context);
-    size_t preamble_length = (&_preamble_end - &_preamble_start);
+    size_t preamble_length = (&preamble_end - &preamble_start);
 
 #if !USE_TF
     preamble_length=0;
 #endif
 
     /* make an initial estimate on the instruction length from the fault address */
-    instruction_length = (uintptr_t)signal_context->uc_mcontext.gregs[IP] - (uintptr_t)_packet - preamble_length;
+    instruction_length = (uintptr_t)signal_context->uc_mcontext.gregs[IP] - (uintptr_t)ProcessorManager::_packet - preamble_length;
 
     if (instruction_length < 0)
     {
@@ -105,16 +217,17 @@ void ProcessorManager::FaultHandler(int signal_number, siginfo_t* signal_info, v
         static_cast<uint32_t>((uintptr_t)signal_info->si_addr) :
         static_cast<uint32_t>(-1);
 
-    memcpy(signal_context->uc_mcontext.gregs, _fault_context.gregs, sizeof(_fault_context.gregs));
-    signal_context->uc_mcontext.gregs[IP] = (uintptr_t)&_resume;
+    memcpy(signal_context->uc_mcontext.gregs, ProcessorManager::_fault_context.gregs, sizeof(ProcessorManager::_fault_context.gregs));
+    signal_context->uc_mcontext.gregs[IP] = (uintptr_t)&resume;
     signal_context->uc_mcontext.gregs[REG_EFL] &= ~TF;
 }
 
 void ProcessorManager::Preamble()
 {
-#ifdef POWER_PC
+#if PROCESSOR == POWER_PC
     // TODO
-#elif __x86_64__
+#elif PROCESSOR == INTEL
+#   if __x86_64__
     __asm__ __volatile__ ("\
 			.global preamble_start                    \n\
 			preamble_start:                           \n\
@@ -127,7 +240,7 @@ void ProcessorManager::Preamble()
 			:
 			:"i"(TF)
 			);
-#else
+#   else
 	__asm__ __volatile__ ("\
 			.global preamble_start                    \n\
 			preamble_start:                           \n\
@@ -140,5 +253,6 @@ void ProcessorManager::Preamble()
 			:
 			:"i"(TF)
 			);
+#   endif
 #endif
 }

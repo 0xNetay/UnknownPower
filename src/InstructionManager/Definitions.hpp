@@ -20,7 +20,7 @@ using InstructionBytes = std::array<uint8_t, MAX_INSTRUCTION_LENGTH>;
 struct Instruction
 {
     InstructionBytes bytes;
-    int length;
+    size_t length;
 };
 
 struct InstructionRange
@@ -31,10 +31,10 @@ struct InstructionRange
 
 namespace details
 {
-#if defined(POWER_PC)
+#if PROCESSOR == POWER_PC
     const Instruction START_INSTRUCTION = { { 0x00, 0x00, 0x00, 0x00 }, 0};
     const Instruction END_INSTRUCTION = { { 0xff, 0xff, 0xff, 0xff }, 0};
-#elif defined(INTEL)
+#elif PROCESSOR == INTEL
     const Instruction START_INSTRUCTION = {
             {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, 0};
     const Instruction END_INSTRUCTION = {

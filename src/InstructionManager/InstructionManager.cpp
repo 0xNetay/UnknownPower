@@ -310,7 +310,7 @@ bool InstructionManager::BuildRandomInstruction()
 bool InstructionManager::IncrementRangeForNext(Instruction &instruction, int marker)
 {
     // Zeroing the instruction bytes from marker to end
-    for (int i = marker; i < sizeof(Instruction::bytes); i++)
+    for (size_t i = marker; i < sizeof(Instruction::bytes); i++)
     {
         instruction.bytes[i] = 0;
     }
@@ -344,6 +344,8 @@ bool InstructionManager::CreateRanges()
                 PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0));
         *this->_range_marker = TOTAL_RANGE.start;
     }
+
+    return true;
 }
 
 bool InstructionManager::DropRanges()
@@ -352,6 +354,8 @@ bool InstructionManager::DropRanges()
     {
         munmap(this->_range_marker, sizeof *this->_range_marker);
     }
+
+    return true;
 }
 
 bool InstructionManager::IsPrefix(uint8_t prefix)

@@ -84,11 +84,11 @@ private:
 
     IgnoredOpcode _opcode_blacklist[MAX_BLACKLISTED_OPCODES] = {};
     size_t _opcode_blacklist_length = 0;
-    static constexpr IgnoredOpcode EMPTY_IGNORED_OPCODE = {nullptr, nullptr};
+    const IgnoredOpcode EMPTY_IGNORED_OPCODE = {nullptr, nullptr};
 
     IgnoredPrefix _prefix_blacklist[MAX_BLACKLISTED_PREFIXES] = {};
     size_t _prefix_blacklist_length = 0;
-    static constexpr IgnoredPrefix EMPTY_IGNORED_PREFIX = {nullptr, nullptr};
+    const IgnoredPrefix EMPTY_IGNORED_PREFIX = {nullptr, nullptr};
 };
 
 #endif //UNKNOWNPOWER_CONFIGMANAGER_HPP

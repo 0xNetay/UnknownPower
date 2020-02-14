@@ -41,8 +41,8 @@ private:
     pthread_mutex_t* _pool_mutex;
 
     Instruction _current_instruction = {};
-    int _current_index = 0;
-    int _last_length = 0;
+    size_t _current_index = 0;
+    size_t _last_length = 0;
 
     Instruction* _range_marker = nullptr;
     InstructionRange _current_search_range = {};

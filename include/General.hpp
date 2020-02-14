@@ -5,7 +5,9 @@
 #ifndef UNKNOWNPOWER_GENERAL_HPP
 #define UNKNOWNPOWER_GENERAL_HPP
 
-#define _GNU_SOURCE
+#ifndef _GNU_SOURCE
+#   define _GNU_SOURCE
+#endif
 
 // Global Includes
 #include <stdio.h>
