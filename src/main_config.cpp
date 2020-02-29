@@ -3,7 +3,6 @@
 //
 
 #include "ConfigManager/Definitions.hpp"
-#include "InstructionManager/Definitions.hpp"
 
 // CONFIG FOR APPLICATION
 Config global_config =

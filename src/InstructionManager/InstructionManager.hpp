@@ -20,6 +20,9 @@ public:
     bool BuildNextRange();
     bool BuildNextInstruction();
 
+    inline const Instruction& GetCurrentInstruction() { return this->_current_instruction; }
+    inline const InstructionRange& GetCurrentRange() { return this-> _current_search_range; }
+
     inline BuildMode GetBuildMode() { return this->_build_mode; }
     inline void SetBuildMode(BuildMode new_mode) { this->_build_mode = new_mode; }
 

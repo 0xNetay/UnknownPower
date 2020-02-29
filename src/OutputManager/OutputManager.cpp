@@ -6,6 +6,11 @@
 #include "ConfigManager/ConfigManager.hpp"
 #include "InstructionManager/InstructionManager.hpp"
 
+void OutputManager::PrintInMcToOutput(const Instruction& instruction, FILE* output_file)
+{
+    this->PrintInMcToOutput(instruction, instruction.length, output_file);
+}
+
 void OutputManager::PrintInMcToOutput(const Instruction& instruction, size_t instruction_length, FILE* output_file)
 {
     bool prefix_flag = false;
@@ -16,7 +21,7 @@ void OutputManager::PrintInMcToOutput(const Instruction& instruction, size_t ins
         prefix_flag = true;
     }
     
-    for (size_t i=0; (i < instruction_length) && (i < MAX_INSTRUCTION_LENGTH); i++) 
+    for (size_t i = 0; (i < instruction.length) && (i < MAX_INSTRUCTION_LENGTH); i++)
     {
         this->SyncPrintFormat(output_file, "%02x", instruction.bytes[i]);
         
@@ -37,7 +42,7 @@ void OutputManager::GiveResultToOutput(const Instruction& instruction, BuildMode
     uint64_t address = (uintptr_t)this->_packet_buffer;
     
     switch (this->_output_mode) {
-        case OutputMode::text:
+        case OutputMode::Text:
             switch (build_mode) 
             {
                 case BuildMode::BruteForce:
@@ -61,7 +66,7 @@ void OutputManager::GiveResultToOutput(const Instruction& instruction, BuildMode
             }
             break;
         
-        case OutputMode::raw:
+        case OutputMode::Raw:
 #if USE_CAPSTONE
             if (cs_disasm_iter(this->_capstone_handle, (const uint8_t**)&code, &code_size, &address, this->_capstone_insn)) 
             {
@@ -215,7 +220,7 @@ int OutputManager::PrintInstructionInAsmToOutput(const Instruction& instruction,
         return 0;
     }
     
-    if (this->_output_mode == OutputMode::text) 
+    if (this->_output_mode == OutputMode::Text)
     {
         const uint8_t* code = instruction.bytes.data();
         size_t code_size = instruction.bytes.size();

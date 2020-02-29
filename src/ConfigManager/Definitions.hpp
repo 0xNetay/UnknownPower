@@ -106,8 +106,8 @@ struct RegState
 
 struct IgnoredOpcode
 {
-    const char* opcode;
-    const char* reason;
+    char* opcode;
+    char* reason;
 };
 
 struct IgnoredPrefix

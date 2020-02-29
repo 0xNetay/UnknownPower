@@ -110,14 +110,14 @@ bool InstructionManager::BuildNextRange()
         {
             switch (OutputManager::Instance().GetOutputMode())
             {
-                case OutputMode::text:
+                case OutputMode::Text:
                     OutputManager::Instance().SyncPrintFormat(stdout, "x: ");
                     OutputManager::Instance().PrintInMcToOutput(this->_current_instruction, MAX_INSTRUCTION_LENGTH, stdout);
                     OutputManager::Instance().SyncPrintFormat(stdout, "... (%s)\n", ConfigManager::Instance().GetAtOpcodeBlacklist(i).reason);
                     OutputManager::Instance().SyncFlushOutput(stdout, false);
                     break;
 
-                case OutputMode::raw:
+                case OutputMode::Raw:
                     OutputManager::Instance().GetMutableResult() = {0, 0, 0, 0, 0};
                     OutputManager::Instance().GiveResultToOutput(this->_current_instruction, this->_build_mode, stdout);
                     break;
@@ -137,14 +137,14 @@ bool InstructionManager::BuildNextRange()
         {
             switch (OutputManager::Instance().GetOutputMode())
             {
-                case OutputMode::text:
+                case OutputMode::Text:
                     OutputManager::Instance().SyncPrintFormat(stdout, "x: ");
                     OutputManager::Instance().PrintInMcToOutput(this->_current_instruction, MAX_INSTRUCTION_LENGTH, stdout);
                     OutputManager::Instance().SyncPrintFormat(stdout, "... (%s)\n", ConfigManager::Instance().GetAtPrefixBlacklist(i).reason);
                     OutputManager::Instance().SyncFlushOutput(stdout, false);
                     break;
 
-                case OutputMode::raw:
+                case OutputMode::Raw:
                     OutputManager::Instance().GetMutableResult() = {0, 0, 0, 0, 0};
                     OutputManager::Instance().GiveResultToOutput(this->_current_instruction, this->_build_mode, stdout);
                     break;
@@ -161,14 +161,14 @@ bool InstructionManager::BuildNextRange()
     {
         switch (OutputManager::Instance().GetOutputMode())
         {
-            case OutputMode::text:
+            case OutputMode::Text:
                 OutputManager::Instance().SyncPrintFormat(stdout, "x: ");
                 OutputManager::Instance().PrintInMcToOutput(this->_current_instruction, MAX_INSTRUCTION_LENGTH, stdout);
                 OutputManager::Instance().SyncPrintFormat(stdout, "... (%s)\n", "prefix violation");
                 OutputManager::Instance().SyncFlushOutput(stdout, false);
                 break;
 
-            case OutputMode::raw:
+            case OutputMode::Raw:
                 OutputManager::Instance().GetMutableResult() = {0, 0, 0, 0, 0};
                 OutputManager::Instance().GiveResultToOutput(this->_current_instruction, this->_build_mode, stdout);
                 break;

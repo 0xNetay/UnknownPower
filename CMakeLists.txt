@@ -26,8 +26,9 @@ include_directories(src/injector)
 include_directories(src/state_handler)
 
 file(GLOB_RECURSE UnknownPowerSource
-        "*.hpp"
-        "*.cpp"
+        ${PROJECT_SOURCE_DIR}/include/*.hpp
+        ${PROJECT_SOURCE_DIR}/src/*.hpp
+        ${PROJECT_SOURCE_DIR}/src/*.cpp
         )
 
 add_executable(UnknownPower ${UnknownPowerSource})

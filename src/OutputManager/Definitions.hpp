@@ -21,8 +21,8 @@ struct __attribute__ ((packed)) Result
 
 enum class OutputMode
 {
-    text,
-    raw,
+    Text,
+    Raw,
 };
 
 struct __attribute__ ((packed)) DisassemblyInfo

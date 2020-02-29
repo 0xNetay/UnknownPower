@@ -16,8 +16,8 @@ public:
 
     static void PinCore();
 
-    inline static void* GetMutablePacketBuffer() { return _packet_buffer; }
-    inline static char* GetMutablePacket() { return _packet; }
+    inline static void** GetMutablePacketBuffer() { return &_packet_buffer; }
+    inline static char** GetMutablePacket() { return &_packet; }
 
 private:
     inline ProcessorManager() = default;

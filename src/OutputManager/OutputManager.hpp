@@ -44,6 +44,7 @@ public:
     inline DisassemblyInfo& GetMutableDisassemblyInfo() { return _disassembly_info; }
 #endif
 
+    void PrintInMcToOutput(const Instruction& instruction, FILE* output_file);
     void PrintInMcToOutput(const Instruction& instruction, size_t instruction_length, FILE* output_file);
     void GiveResultToOutput(const Instruction& instruction, BuildMode build_mode, FILE* output_file);
 
@@ -63,14 +64,13 @@ private:
     inline OutputManager() = default;
 
     Result _current_result = {};
-    OutputMode _output_mode = OutputMode::text;
+    OutputMode _output_mode = OutputMode::Text;
 
 #if USE_CAPSTONE
     csh      _capstone_handle = {};
     cs_insn* _capstone_insn = nullptr;
     DisassemblyInfo _disassembly_info = {};
 #endif
-
 
     static constexpr size_t LINE_BUFFER_SIZE = 256;
     static constexpr size_t BUFFER_LINES = 16;
