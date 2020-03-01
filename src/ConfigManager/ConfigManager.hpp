@@ -79,13 +79,16 @@ public:
 private:
     inline ConfigManager() = default;
 
+    // In & Outsource
     Config _config = {};
     RegState _default_reg_state = {};
 
+    // Opcode Blacklist Outsource
     IgnoredOpcode _opcode_blacklist[MAX_BLACKLISTED_OPCODES] = {};
     size_t _opcode_blacklist_length = 0;
     const IgnoredOpcode EMPTY_IGNORED_OPCODE = {nullptr, nullptr};
 
+    // Prefix Blacklist Outsource
     IgnoredPrefix _prefix_blacklist[MAX_BLACKLISTED_PREFIXES] = {};
     size_t _prefix_blacklist_length = 0;
     const IgnoredPrefix EMPTY_IGNORED_PREFIX = {nullptr, nullptr};

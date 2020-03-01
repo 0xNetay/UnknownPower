@@ -63,20 +63,28 @@ public:
 private:
     inline OutputManager() = default;
 
+    // Outsource
+    pthread_mutex_t* _output_mutex = nullptr;
+    void*            _packet_buffer = nullptr;
+
+    // Result
     Result _current_result = {};
     OutputMode _output_mode = OutputMode::Text;
 
 #if USE_CAPSTONE
+    // Capstone
     csh      _capstone_handle = {};
     cs_insn* _capstone_insn = nullptr;
     DisassemblyInfo _disassembly_info = {};
 #endif
 
+    // Buffer Constants
     static constexpr size_t LINE_BUFFER_SIZE = 256;
     static constexpr size_t BUFFER_LINES = 16;
     static constexpr size_t SYNC_LINES_STDOUT = BUFFER_LINES;
     static constexpr size_t SYNC_LINES_STDERR = BUFFER_LINES;
 
+    // Printing Buffers
     char    _stdout_buffer[LINE_BUFFER_SIZE*BUFFER_LINES] = { 0 };
     char*   _stdout_buffer_pos = &_stdout_buffer[0];
     size_t  _stdout_sync_counter = 0;
@@ -84,9 +92,6 @@ private:
     char*   _stderr_buffer_pos = &_stderr_buffer[0];
     size_t  _stderr_sync_counter = 0;
     size_t  _expected_length = 0;
-
-    pthread_mutex_t* _output_mutex = nullptr;
-    void*            _packet_buffer = nullptr;
 };
 
 #endif //UNKNOWNPOWER_OUTPUTMANAGER_HPP

@@ -9,7 +9,7 @@ extern IgnoredOpcode opcode_blacklist[MAX_BLACKLISTED_OPCODES];
 extern Config global_config;
 extern RegState injected_reg_state;
 
-Launcher::Launcher(int argc, char** argv) : _argc(argc), _argv(), _instruction_manager(_pool_mutex)
+Launcher::Launcher(int argc, char** argv) : _argc(argc), _argv(), _instruction_manager(&_pool_mutex)
 {
 }
 
@@ -27,6 +27,9 @@ bool Launcher::Init()
     pthread_mutex_init(this->_pool_mutex, &this->_mutex_attr);
     pthread_mutex_init(this->_output_mutex, &this->_mutex_attr);
 
+    OutputManager::Instance().SetOutputMode(OutputMode::Raw);
+    OutputManager::Instance().SetOutputMutex(_output_mutex);
+
     if (!this->Configure())
     {
         return false;
@@ -41,16 +44,17 @@ bool Launcher::Init()
     sigaltstack(&ss, nullptr);
 
     this->_packet_buffer_unaligned = malloc(PAGE_SIZE*3);
-    *ProcessorManager::GetMutablePacket() = reinterpret_cast<char*>(((uintptr_t)this->_packet_buffer_unaligned + (PAGE_SIZE - 1)) & ~(PAGE_SIZE-1));
+    *ProcessorManager::GetMutablePacketBuffer() = reinterpret_cast<char*>(((uintptr_t)this->_packet_buffer_unaligned + (PAGE_SIZE - 1)) & ~(PAGE_SIZE-1));
+    OutputManager::Instance().SetPacketBuffer(*ProcessorManager::GetMutablePacketBuffer());
 
-    assert(!mprotect(*ProcessorManager::GetMutablePacket(), PAGE_SIZE, PROT_READ|PROT_WRITE|PROT_EXEC));
+    assert(!mprotect(*ProcessorManager::GetMutablePacketBuffer(), PAGE_SIZE, PROT_READ|PROT_WRITE|PROT_EXEC));
     if (ConfigManager::Instance().GetConfig().no_execute_support)
     {
-        assert(!mprotect(*ProcessorManager::GetMutablePacket() + PAGE_SIZE, PAGE_SIZE, PROT_READ|PROT_WRITE));
+        assert(!mprotect(reinterpret_cast<char*>(*ProcessorManager::GetMutablePacketBuffer()) + PAGE_SIZE, PAGE_SIZE, PROT_READ|PROT_WRITE));
     }
     else
     {
-        assert(!mprotect(*ProcessorManager::GetMutablePacket() + PAGE_SIZE, PAGE_SIZE, PROT_NONE));
+        assert(!mprotect(reinterpret_cast<char*>(*ProcessorManager::GetMutablePacketBuffer()) + PAGE_SIZE, PAGE_SIZE, PROT_NONE));
     }
 
 #if USE_CAPSTONE
@@ -75,16 +79,15 @@ bool Launcher::Init()
             exit(1);
         }
     }
-    
+
+    this->_instruction_manager.CreateRanges();
+
     return true;
 }
 
 void Launcher::Run()
 {
     int pid = 0;
-
-    this->_instruction_manager.CreateRanges();
-
     for (size_t i = 0; i < ConfigManager::Instance().GetConfig().jobs_count - 1; i++)
     {
         pid = fork();
@@ -155,10 +158,6 @@ void Launcher::Close()
 bool Launcher::Configure()
 {
     Config config = global_config;
-
-    OutputManager::Instance().SetOutputMode(OutputMode::Raw);
-    OutputManager::Instance().SetOutputMutex(_output_mutex);
-    OutputManager::Instance().SetPacketBuffer(*ProcessorManager::GetMutablePacketBuffer());
 
     int c;
     opterr = 0;
@@ -310,8 +309,6 @@ void Launcher::PrintHelp()
     printf("\t[-s seed] ........... in random search, seed (default: time(0))\n");
     printf("\t[-B brute_depth] .... in brute search, maximum search depth (default: %zu)\n", ConfigManager::Instance().GetConfig().brute_force_byte_depth);
     printf("\t[-P max_prefix] ..... maximum number of prefixes to search (default: %zu)\n", ConfigManager::Instance().GetConfig().max_explored_prefix);
-    printf("\t[-i instruction] .... instruction at which to start search, inclusive (default: 0)\n");
-    printf("\t[-e instruction] .... instruction at which to end search, exclusive (default: ff..ff)\n");
     printf("\t[-c core] ........... core on which to perform search (default: any)\n");
     printf("\t[-X blacklist] ...... blacklist the specified instruction\n");
     printf("\t[-j jobs] ........... number of simultaneous jobs to run (default: %zu)\n", ConfigManager::Instance().GetConfig().jobs_count);

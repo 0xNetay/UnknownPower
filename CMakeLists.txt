@@ -4,7 +4,7 @@ project(UnknownPower)
 set(CMAKE_CXX_STANDARD 14)
 
 SET(COMPILE_FLAGS "-Wall")
-SET(LINK_FLAGS "-O3 -Wall -no-pie -l:libcapstone.a -pthread")
+SET(LINK_FLAGS "-O3 -Wall -no-pie -pthread")
 
 SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${COMPILE_FLAGS}")
 SET(CMAKE_EXE_LINKER_FLAGS  "${LINK_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}")
@@ -12,7 +12,7 @@ SET(CMAKE_EXE_LINKER_FLAGS  "${LINK_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}")
 add_definitions(-DINTEL=0 -DPOWER_PC=1)
 add_definitions(-DPROCESSOR=INTEL)
 
-add_definitions(-DUSE_CAPSTONE=true)
+add_definitions(-DUSE_CAPSTONE=false)
 
 include_directories(.)
 include_directories(include)
@@ -31,4 +31,5 @@ file(GLOB_RECURSE UnknownPowerSource
         ${PROJECT_SOURCE_DIR}/src/*.cpp
         )
 
+# target_link_libraries(UnknownPower capstone)
 add_executable(UnknownPower ${UnknownPowerSource})

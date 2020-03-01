@@ -28,11 +28,13 @@ private:
 
     static void Preamble();
 
-    static bool _is_first;
-    static mcontext_t _fault_context;
-
+    // Outsource
     static void* _packet_buffer;
     static char* _packet;
+
+    // Misc
+    static bool _is_first;
+    static mcontext_t _fault_context;
 };
 
 #endif //UNKNOWNPOWER_PROCESSORMANAGER_HPP

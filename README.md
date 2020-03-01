@@ -4,7 +4,8 @@ sudo apt-get install make
 sudo apt-get install cmake
 sudo apt-get install python
 sudo apt install python-pip
-sudo apt-get install libcapstone3 libcapstone-dev
+sudo apt-get install libcapstone3 
+sudo apt-get install libcapstone-dev
 sudo pip install capstone
 
 Get CLION from JetBrains (Recommended)

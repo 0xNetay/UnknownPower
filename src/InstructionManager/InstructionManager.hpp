@@ -11,7 +11,7 @@
 class InstructionManager
 {
 public:
-    inline explicit InstructionManager(pthread_mutex_t* pool_mutex) : _pool_mutex(pool_mutex) {}
+    inline explicit InstructionManager(pthread_mutex_t** pool_mutex) : _pool_mutex(pool_mutex) {}
     inline ~InstructionManager() { this->DropRanges(); }
 
     bool CreateRanges();
@@ -41,15 +41,19 @@ private:
     bool HasOpcode(const uint8_t original_opcode[]);
     bool HasPrefix(const uint8_t original_prefix[]);
 
-    pthread_mutex_t* _pool_mutex;
+    // Outsource
+    pthread_mutex_t** _pool_mutex;
 
+    // Instruction info
     Instruction _current_instruction = {};
     size_t _current_index = 0;
     size_t _last_length = 0;
 
+    // Range info
     Instruction* _range_marker = nullptr;
     InstructionRange _current_search_range = {};
 
+    // Misc
     bool _had_started = false;
     BuildMode _build_mode = BuildMode::TunnelMinMax;
 };

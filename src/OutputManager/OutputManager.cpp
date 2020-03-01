@@ -207,9 +207,9 @@ void OutputManager::PrintInstructionToOutput(const Instruction& instruction, FIL
 
 void OutputManager::PrintRangeToOutput(const InstructionRange &range, FILE* output_file)
 {
-    this->PrintInstructionInAsmToOutput(range.start, output_file);
+    this->PrintInstructionToOutput(range.start, output_file);
     this->SyncPrintFormat(output_file, ";");
-    this->PrintInstructionInAsmToOutput(range.end, output_file);
+    this->PrintInstructionToOutput(range.end, output_file);
 }
 
 #if USE_CAPSTONE

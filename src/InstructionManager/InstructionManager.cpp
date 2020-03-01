@@ -26,7 +26,7 @@ bool InstructionManager::Init(const Instruction &other)
     return true;
 }
 
-bool InstructionManager::BuildNextRange()
+bool InstructionManager::BuildNextInstruction()
 {
     switch (this->GetBuildMode())
     {
@@ -198,7 +198,7 @@ bool InstructionManager::BuildNextRange()
     }
 }
 
-bool InstructionManager::BuildNextInstruction()
+bool InstructionManager::BuildNextRange()
 {
     bool result = true;
 
@@ -217,7 +217,7 @@ bool InstructionManager::BuildNextInstruction()
 
         case BuildMode::BruteForce:
         case BuildMode::TunnelMinMax:
-            pthread_mutex_lock(this->_pool_mutex);
+            pthread_mutex_lock(*this->_pool_mutex);
             this->_had_started = false;
 
             if (memcmp(this->_range_marker->bytes.data(), TOTAL_RANGE.end.bytes.data(),
@@ -246,7 +246,7 @@ bool InstructionManager::BuildNextInstruction()
                 *this->_range_marker= this->_current_search_range.end;
             }
 
-            pthread_mutex_unlock(this->_pool_mutex);
+            pthread_mutex_unlock(*this->_pool_mutex);
             break;
 
         default:
@@ -360,6 +360,7 @@ bool InstructionManager::DropRanges()
 
 bool InstructionManager::IsPrefix(uint8_t prefix)
 {
+#if PROCESSOR == INTEL
     return
             prefix==0xf0 || /* lock */
             prefix==0xf2 || /* repne / bound */
@@ -372,11 +373,13 @@ bool InstructionManager::IsPrefix(uint8_t prefix)
             prefix==0x65 || /* gs */
             prefix==0x66 || /* data */
             prefix==0x67    /* addr */
-#if __x86_64__
+#   if __x86_64__
             || (prefix >= 0x40 && prefix <= 0x4f) /* rex */
-#endif
+#   endif
             ;
-            // TODO: POWERPC
+#elif PROCESSOR == POWER_PC
+    return false;  // TODO: POWERPC
+#endif
 }
 
 size_t InstructionManager::PrefixCount()

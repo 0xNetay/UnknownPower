@@ -2,7 +2,6 @@
 // Created by student on 2/11/20.
 //
 
-#include <src/OutputManager/OutputManager.hpp>
 #include "ProcessorManager.hpp"
 #include "ConfigManager/ConfigManager.hpp"
 #include "OutputManager/OutputManager.hpp"
@@ -53,7 +52,13 @@ void ProcessorManager::InjectInstructionToProcessor(const Instruction& instructi
     {
         ProcessorManager::ConfigureSignalHandler();
         ProcessorManager::_is_first = false;
-        __asm__ __volatile__ ("ud2\n"); // Create a first fault
+
+        // Create a first fault with undefined instruction
+#if PROCESSOR == POWER_PC
+        // TODO: POWERPC
+#elif PROCESSOR == INTEL
+        __asm__ __volatile__ ("ud2\n");
+#endif
     }
 
     ProcessorManager::ConfigureSignalHandler();
