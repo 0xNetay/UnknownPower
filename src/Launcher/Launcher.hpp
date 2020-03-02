@@ -28,8 +28,6 @@ private:
 
     static void PrintUsage();
 
-    static void PrintLoopStatus(const Instruction& instruction);
-
     int _argc;
     char** _argv;
 

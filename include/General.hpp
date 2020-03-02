@@ -36,7 +36,6 @@
 #define STR(x) #x
 #define XSTR(x) STR(x)
 
-#define UD2_SIZE  2
 #define PAGE_SIZE 4096
 #define TF        0x100
 
@@ -53,8 +52,10 @@
 // Instruction Minimum Length. Intel is 1, PowerPC is 4
 #if PROCESSOR == POWER_PC
 #	define MIN_INSTRUCTION_LENGTH 4
+#   define UNDEFINED_INSTRUCTION_LENGTH  4
 #elif PROCESSOR == INTEL
 #	define MIN_INSTRUCTION_LENGTH 1
+#   define UNDEFINED_INSTRUCTION_LENGTH 2
 #else
 #   static_assert(false, "Unknown Processor");
 #endif

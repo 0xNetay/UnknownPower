@@ -101,18 +101,42 @@ void Launcher::Run()
     // Main Loop
     while (this->_instruction_manager.BuildNextRange())
     {
+        if (OutputManager::Instance().GetOutputMode() == OutputMode::Text)
+        {
+            OutputManager::Instance().SyncPrintFormat(stdout, "\t~~ RANGE (job id: %d) ~~", pid);
+            OutputManager::Instance().PrintRangeToOutput(this->_instruction_manager.GetCurrentRange(), stdout);
+            OutputManager::Instance().SyncPrintFormat(stdout, "\n");
+            OutputManager::Instance().SyncFlushOutput(stdout, true);
+        }
+
         while (this->_instruction_manager.BuildNextInstruction())
         {
             Instruction current = this->_instruction_manager.GetCurrentInstruction();
-            Launcher::PrintLoopStatus(current);
+
+            if (OutputManager::Instance().GetOutputMode() == OutputMode::Text)
+            {
+                OutputManager::Instance().SyncPrintFormat(stdout, "\t~~ INST (job id: %d) ~~", pid);
+                OutputManager::Instance().PrintInMcToOutput(current, stdout);
+#if USE_CAPSTONE
+                OutputManager::Instance().SyncPrintFormat(stdout, "(asm: ");
+                OutputManager::Instance().PrintInstructionInAsmToOutput(instruction, stdout);
+                OutputManager::Instance().SyncPrintFormat(stdout, " )");
+#endif
+                OutputManager::Instance().SyncPrintFormat(stdout, "...\n");
+                OutputManager::Instance().SyncFlushOutput(stdout, true);
+            }
 
             size_t i;
             for (i = MIN_INSTRUCTION_LENGTH; i <= MAX_INSTRUCTION_LENGTH; i++)
             {
+                size_t temp_length = current.length;
                 current.length = i;
                 ProcessorManager::InjectInstructionToProcessor(current);
-                if (OutputManager::Instance().GetImmutableResult().address !=
-                    (uint32_t)(uintptr_t)(*ProcessorManager::GetMutablePacket() + PAGE_SIZE))
+                current.length = temp_length;
+
+                uintptr_t packet_address = uintptr_t(*ProcessorManager::GetMutablePacket());
+
+                if (OutputManager::Instance().GetImmutableResult().address != (packet_address + PAGE_SIZE))
                 {
                     break;
                 }
@@ -322,21 +346,4 @@ void Launcher::PrintUsage()
     printf("\t[-i instruction] [-e instruction]\n");
     printf("\t[-c core] [-X blacklist]\n");
     printf("\t[-j jobs] [-l range_bytes]\n");
-}
-
-void Launcher::PrintLoopStatus(const Instruction& instruction)
-{
-    if (OutputManager::Instance().GetOutputMode() == OutputMode::Text)
-    {
-        OutputManager::Instance().SyncPrintFormat(stdout, "r: ");
-        OutputManager::Instance().PrintInMcToOutput(instruction, stdout);
-        OutputManager::Instance().SyncPrintFormat(stdout, "... ");
-
-#if USE_CAPSTONE
-        OutputManager::Instance().PrintInstructionInAsmToOutput(instruction, stdout);
-        OutputManager::Instance().SyncPrintFormat(stdout, " ");
-#endif
-
-        OutputManager::Instance().SyncFlushOutput(stdout, false);
-    }
 }

@@ -23,21 +23,16 @@ void ProcessorManager::InjectInstructionToProcessor(const Instruction& instructi
     size_t preamble_length = (&preamble_end - &preamble_start);
 
 #if !USE_TF
-    preamble_length=0;
+    preamble_length = 0;
 #endif
 
     ProcessorManager::_packet =
         reinterpret_cast<char*>(ProcessorManager::_packet_buffer) + PAGE_SIZE - instruction.length - preamble_length;
 
-    for (size_t i = 0; i < preamble_length; i++)
-    {
-        ProcessorManager::_packet[i] = reinterpret_cast<char*>(&preamble_start)[i];
-    }
+    memcpy(ProcessorManager::_packet, &preamble_start, preamble_length);
 
-    for (size_t i = 0; (i < MAX_INSTRUCTION_LENGTH) && (i < instruction.length); i++)
-    {
-        ProcessorManager::_packet[i + preamble_length] = instruction.bytes[i];
-    }
+    size_t minimum = instruction.length <= MAX_INSTRUCTION_LENGTH ? instruction.length : MAX_INSTRUCTION_LENGTH;
+    memcpy(ProcessorManager::_packet + preamble_length, instruction.bytes.data(), minimum);
 
     if (ConfigManager::Instance().GetConfig().enable_null_access)
     {
@@ -63,7 +58,6 @@ void ProcessorManager::InjectInstructionToProcessor(const Instruction& instructi
 
     ProcessorManager::ConfigureSignalHandler();
 
-    char* packet = ProcessorManager::_packet;
     RegState inject_state = ConfigManager::Instance().GetRegState();
 
 #if PROCESSOR == POWER_PC
@@ -106,7 +100,7 @@ void ProcessorManager::InjectInstructionToProcessor(const Instruction& instructi
                 [r15]"m"(inject_state.r15),
                 [rbp]"m"(inject_state.rbp),
                 [rsp]"i"(&dummy_stack.dummy_stack_lo),
-                [packet]"m"(packet)
+                [packet]"m"(_packet)
     );
 #   else
     __asm__ __volatile__ ("\
@@ -129,7 +123,7 @@ void ProcessorManager::InjectInstructionToProcessor(const Instruction& instructi
 			    [edi]"m"(inject_state.edi),
 			    [ebp]"m"(inject_state.ebp),
 			    [esp]"i"(&dummy_stack->dummy_stack_lo),
-			    [packet]"m"(packet)
+			    [packet]"m"(_packet)
 			);
 #   endif
 #endif
@@ -185,23 +179,23 @@ void ProcessorManager::FirstStateHandler(int signal_number, siginfo_t* signal_in
     ucontext_t* signal_context = reinterpret_cast<ucontext_t*>(context);
 
     ProcessorManager::_fault_context = signal_context->uc_mcontext;
-    signal_context->uc_mcontext.gregs[IP] += UD2_SIZE;
+    signal_context->uc_mcontext.gregs[IP] += UNDEFINED_INSTRUCTION_LENGTH;
 }
 
 void ProcessorManager::FaultHandler(int signal_number, siginfo_t* signal_info, void* context)
 {
     // TODO: Check what to do with POWERPC
 
-    size_t instruction_length;
     ucontext_t* signal_context = reinterpret_cast<ucontext_t*>(context);
     size_t preamble_length = (&preamble_end - &preamble_start);
 
 #if !USE_TF
-    preamble_length=0;
+    preamble_length = 0;
 #endif
 
     /* make an initial estimate on the instruction length from the fault address */
-    instruction_length = (uintptr_t)signal_context->uc_mcontext.gregs[IP] - (uintptr_t)ProcessorManager::_packet - preamble_length;
+    uintptr_t ip_before_signal = signal_context->uc_mcontext.gregs[IP];
+    int instruction_length = ip_before_signal - uintptr_t(ProcessorManager::_packet) - preamble_length;
 
     if (instruction_length < 0)
     {
@@ -217,6 +211,7 @@ void ProcessorManager::FaultHandler(int signal_number, siginfo_t* signal_info, v
     result_ptr->length = instruction_length;
     result_ptr->signum = signal_number;
     result_ptr->si_code = signal_info->si_code;
+
     result_ptr->address =
         (signal_number == SIGSEGV || signal_number==SIGBUS) ?
         static_cast<uint32_t>((uintptr_t)signal_info->si_addr) :
