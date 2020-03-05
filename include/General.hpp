@@ -40,10 +40,15 @@
 #define TF        0x100
 
 // Registers Size
-#if __x86_64__
-	#define IP REG_RIP 
-#else
-	#define IP REG_EIP 
+#if PROCESSOR == POWER_PC
+#       define IP REG_RIP // TODO: POWERPC
+#elif PROCESSOR == INTEL
+#   if __x86_64__
+#       define IP REG_RIP
+#   else
+#       define IP REG_EIP
+#endif
+
 #endif
 
 // Flag to determine if to go over all bytes (true) or specific instructions (false)
@@ -80,7 +85,6 @@
 
 // Feedback
 #define TICK_MASK 0xffff
-#define RAW_REPORT_INSN_BYTES 16
 
 #if USE_CAPSTONE
 	#include <capstone/capstone.h>
@@ -89,13 +93,19 @@
 	#else
 		#define CS_MODE CS_MODE_32
 	#endif
-
-#	define RAW_REPORT_DISAS_MNE false
-#	define RAW_REPORT_DISAS_MNE_BYTES 16
-#	define RAW_REPORT_DISAS_OPS false
-#	define RAW_REPORT_DISAS_OPS_BYTES 32
-#	define RAW_REPORT_DISAS_LEN true
-#	define RAW_REPORT_DISAS_VAL true
 #endif
+
+#if PROCESSOR == POWER_PC
+#   define RAW_REPORT_INSN_BYTES 4
+#elif PROCESSOR == INTEL
+#   define RAW_REPORT_INSN_BYTES 16
+#endif
+
+#define RAW_REPORT_DISAS_MNE false
+#define RAW_REPORT_DISAS_MNE_BYTES 16
+#define RAW_REPORT_DISAS_OPS false
+#define RAW_REPORT_DISAS_OPS_BYTES 32
+#define RAW_REPORT_DISAS_LEN true
+#define RAW_REPORT_DISAS_VAL true
 
 #endif //UNKNOWNPOWER_GENERAL_HPP

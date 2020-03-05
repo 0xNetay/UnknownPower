@@ -21,7 +21,7 @@ void OutputManager::PrintInMcToOutput(const Instruction& instruction, size_t ins
         prefix_flag = true;
     }
     
-    for (size_t i = 0; (i < instruction.length) && (i < MAX_INSTRUCTION_LENGTH); i++)
+    for (size_t i = 0; (i < instruction_length) && (i < MAX_INSTRUCTION_LENGTH); i++)
     {
         this->SyncPrintFormat(output_file, "%02x", instruction.bytes[i]);
         

@@ -11,7 +11,7 @@ bool InstructionManager::Init()
     this->_current_instruction.bytes = { 0 };
     this->_current_instruction.length = 0;
     this->_current_index = -1;
-    this->_last_length = -1;
+    this->_last_length = 0;
     return true;
 }
 
@@ -181,7 +181,7 @@ bool InstructionManager::BuildNextInstruction()
 
     if (memcmp(this->_current_instruction.bytes.data(),
             this->_current_search_range.end.bytes.data(),
-            sizeof(this->_current_instruction.bytes)) >= 0)
+             this->_current_instruction.bytes.size()) >= 0)
     {
         return false;
     }
@@ -221,7 +221,7 @@ bool InstructionManager::BuildNextRange()
             this->_had_started = false;
 
             if (memcmp(this->_range_marker->bytes.data(), TOTAL_RANGE.end.bytes.data(),
-                       sizeof(this->_range_marker->bytes))==0)
+                       sizeof(this->_range_marker->bytes)) == 0)
             {
                 // reached end of range
                 result = false;
@@ -237,7 +237,7 @@ bool InstructionManager::BuildNextRange()
                     this->_current_search_range.end = TOTAL_RANGE.end;
                 }
                 else if (memcmp(this->_current_search_range.end.bytes.data(),
-                                TOTAL_RANGE.end.bytes.data(), sizeof(this->_current_search_range.end.bytes))>0)
+                                TOTAL_RANGE.end.bytes.data(), sizeof(this->_current_search_range.end.bytes)) > 0)
                 {
                     // if increment moved past end, set to end
                     this->_current_search_range.end = TOTAL_RANGE.end;
@@ -300,8 +300,8 @@ bool InstructionManager::BuildRandomInstruction()
         {
             this->_current_instruction.bytes[i] = random % 256;
         }
-        all_max=all_max&&(this->_current_instruction.bytes[i] == inclusive_end[i]);
-        all_min=all_min&&(this->_current_instruction.bytes[i] == this->_current_search_range.start.bytes[i]);
+        all_max = all_max && (this->_current_instruction.bytes[i] == inclusive_end[i]);
+        all_min = all_min && (this->_current_instruction.bytes[i] == this->_current_search_range.start.bytes[i]);
     }
 
     return true;
@@ -310,7 +310,7 @@ bool InstructionManager::BuildRandomInstruction()
 bool InstructionManager::IncrementRangeForNext(Instruction &instruction, int marker)
 {
     // Zeroing the instruction bytes from marker to end
-    for (size_t i = marker; i < sizeof(Instruction::bytes); i++)
+    for (size_t i = marker; i < MAX_INSTRUCTION_LENGTH; i++)
     {
         instruction.bytes[i] = 0;
     }
@@ -352,7 +352,7 @@ bool InstructionManager::DropRanges()
 {
     if (this->_range_marker != nullptr)
     {
-        munmap(this->_range_marker, sizeof *this->_range_marker);
+        munmap(this->_range_marker, sizeof(*this->_range_marker));
     }
 
     return true;
@@ -384,20 +384,21 @@ bool InstructionManager::IsPrefix(uint8_t prefix)
 
 size_t InstructionManager::PrefixCount()
 {
-    for (size_t i = 0; i < MAX_INSTRUCTION_LENGTH; i++)
+    size_t i = 0;
+    for (; i < MAX_INSTRUCTION_LENGTH; i++)
     {
         if (!InstructionManager::IsPrefix(this->_current_instruction.bytes[i]))
         {
             return i;
         }
     }
-    return 0;
+    return i;
 }
 
 bool InstructionManager::HasDuplicatePrefix()
 {
     static constexpr size_t MAX_BYTES_COUNT = 0xff;
-    static size_t byte_count[MAX_BYTES_COUNT];
+    static size_t byte_count[MAX_BYTES_COUNT] = { 0 };
 
     memset(byte_count, 0, sizeof(byte_count));
 
@@ -413,9 +414,9 @@ bool InstructionManager::HasDuplicatePrefix()
         }
     }
 
-    for (size_t byte : byte_count)
+    for (size_t i = 0; i < MAX_BYTES_COUNT; i++)
     {
-        if (byte > 1)
+        if (byte_count[i] > 1)
         {
             return true;
         }

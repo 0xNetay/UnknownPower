@@ -197,11 +197,7 @@ void ProcessorManager::FaultHandler(int signal_number, siginfo_t* signal_info, v
     uintptr_t ip_before_signal = signal_context->uc_mcontext.gregs[IP];
     int instruction_length = ip_before_signal - uintptr_t(ProcessorManager::_packet) - preamble_length;
 
-    if (instruction_length < 0)
-    {
-        instruction_length = JUMP_OR_UNDETERMINED_INSTRUCTION_LENGTH;
-    }
-    else if (instruction_length > MAX_INSTRUCTION_LENGTH)
+    if (instruction_length < 0 || instruction_length > MAX_INSTRUCTION_LENGTH)
     {
         instruction_length = JUMP_OR_UNDETERMINED_INSTRUCTION_LENGTH;
     }

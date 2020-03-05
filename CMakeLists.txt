@@ -29,6 +29,7 @@ file(GLOB_RECURSE UnknownPowerSource
         ${PROJECT_SOURCE_DIR}/include/*.hpp
         ${PROJECT_SOURCE_DIR}/src/*.hpp
         ${PROJECT_SOURCE_DIR}/src/*.cpp
+        ${PROJECT_SOURCE_DIR}/src/*.c
         )
 
 # target_link_libraries(UnknownPower capstone)

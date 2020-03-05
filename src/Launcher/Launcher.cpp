@@ -15,6 +15,7 @@ Launcher::Launcher(int argc, char** argv) : _argc(argc), _argv(), _instruction_m
 
 bool Launcher::Init()
 {
+    // Mutex + Pthread Configure
     pthread_mutexattr_init(&this->_mutex_attr);
     pthread_mutexattr_setpshared(&this->_mutex_attr, PTHREAD_PROCESS_SHARED);
 
@@ -27,22 +28,27 @@ bool Launcher::Init()
     pthread_mutex_init(this->_pool_mutex, &this->_mutex_attr);
     pthread_mutex_init(this->_output_mutex, &this->_mutex_attr);
 
-    OutputManager::Instance().SetOutputMode(OutputMode::Raw);
+    // Output Configure
+    OutputManager::Instance().SetOutputMode(OutputMode::Text);
     OutputManager::Instance().SetOutputMutex(_output_mutex);
 
+    // Arg Configure
     if (!this->Configure())
     {
         return false;
     }
 
-    ProcessorManager::PinCore();
-
     srand(ConfigManager::Instance().GetConfig().seed_for_random);
 
+    // Processor Configure
+    ProcessorManager::PinCore();
+
+    // Signal Stack Configure
     static char stack[SIGSTKSZ] = { 0 };
     static stack_t ss = { stack, 0, SIGSTKSZ };
     sigaltstack(&ss, nullptr);
 
+    // Packet Configure
     this->_packet_buffer_unaligned = malloc(PAGE_SIZE*3);
     *ProcessorManager::GetMutablePacketBuffer() = reinterpret_cast<char*>(((uintptr_t)this->_packet_buffer_unaligned + (PAGE_SIZE - 1)) & ~(PAGE_SIZE-1));
     OutputManager::Instance().SetPacketBuffer(*ProcessorManager::GetMutablePacketBuffer());
@@ -58,6 +64,7 @@ bool Launcher::Init()
     }
 
 #if USE_CAPSTONE
+    // Capstone Configure
     if (cs_open(CS_ARCH_X86, CS_MODE, &this->_capstone_handle) != CS_ERR_OK)
     {
         exit(1);
@@ -70,6 +77,7 @@ bool Launcher::Init()
     // OutputManager::Instance().GetMutableDisassemblyInfo() = _disassembly_info;
 #endif
 
+    // Null Configure
     if (ConfigManager::Instance().GetConfig().enable_null_access)
     {
         this->_null_p = mmap(0, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_FIXED|MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
@@ -80,6 +88,7 @@ bool Launcher::Init()
         }
     }
 
+    // Ranges Configure
     this->_instruction_manager.CreateRanges();
 
     return true;
@@ -101,13 +110,13 @@ void Launcher::Run()
     // Main Loop
     while (this->_instruction_manager.BuildNextRange())
     {
-        if (OutputManager::Instance().GetOutputMode() == OutputMode::Text)
-        {
-            OutputManager::Instance().SyncPrintFormat(stdout, "\t~~ RANGE (job id: %d) ~~", pid);
-            OutputManager::Instance().PrintRangeToOutput(this->_instruction_manager.GetCurrentRange(), stdout);
-            OutputManager::Instance().SyncPrintFormat(stdout, "\n");
-            OutputManager::Instance().SyncFlushOutput(stdout, true);
-        }
+//        if (OutputManager::Instance().GetOutputMode() == OutputMode::Text)
+//        {
+//            OutputManager::Instance().SyncPrintFormat(stdout, "\t~~ RANGE (job id: %d) ~~", pid);
+//            OutputManager::Instance().PrintRangeToOutput(this->_instruction_manager.GetCurrentRange(), stdout);
+//            OutputManager::Instance().SyncPrintFormat(stdout, "\n");
+//            OutputManager::Instance().SyncFlushOutput(stdout, true);
+//        }
 
         while (this->_instruction_manager.BuildNextInstruction())
         {
@@ -115,15 +124,15 @@ void Launcher::Run()
 
             if (OutputManager::Instance().GetOutputMode() == OutputMode::Text)
             {
-                OutputManager::Instance().SyncPrintFormat(stdout, "\t~~ INST (job id: %d) ~~", pid);
-                OutputManager::Instance().PrintInMcToOutput(current, stdout);
+//                OutputManager::Instance().SyncPrintFormat(stdout, "\t~~ INST (job id: %d) ~~", pid);
+                OutputManager::Instance().SyncPrintFormat(stdout, "r: ");
+                OutputManager::Instance().PrintInMcToOutput(current, 8, stdout);
+                OutputManager::Instance().SyncPrintFormat(stdout, "... ");
 #if USE_CAPSTONE
-                OutputManager::Instance().SyncPrintFormat(stdout, "(asm: ");
                 OutputManager::Instance().PrintInstructionInAsmToOutput(instruction, stdout);
-                OutputManager::Instance().SyncPrintFormat(stdout, " )");
+                OutputManager::Instance().SyncPrintFormat(stdout, " ");
 #endif
-                OutputManager::Instance().SyncPrintFormat(stdout, "...\n");
-                OutputManager::Instance().SyncFlushOutput(stdout, true);
+                OutputManager::Instance().SyncFlushOutput(stdout, false);
             }
 
             size_t i;

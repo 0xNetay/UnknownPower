@@ -46,7 +46,7 @@ private:
 
     // Instruction info
     Instruction _current_instruction = {};
-    size_t _current_index = 0;
+    int _current_index = 0;
     size_t _last_length = 0;
 
     // Range info
