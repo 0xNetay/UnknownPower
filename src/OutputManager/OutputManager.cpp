@@ -39,7 +39,7 @@ void OutputManager::GiveResultToOutput(const Instruction& instruction, BuildMode
 {
     const uint8_t* code = instruction.bytes.data();
     size_t code_size = instruction.bytes.size();
-    uint64_t address = (uintptr_t)this->_packet_buffer;
+    uint64_t address = (uintptr_t)*this->_packet_buffer;
     
     switch (this->_output_mode) {
         case OutputMode::Text:
@@ -77,7 +77,7 @@ void OutputManager::GiveResultToOutput(const Instruction& instruction, BuildMode
                 strncpy(this->_disassembly_info.ops, capstone_insn[0].op_str, RAW_DISAS_OP_BYTES);
 #endif
 #if RAW_REPORT_DISAS_LEN
-                this->_disassembly_info.length = (int)(address - (uintptr_t)this->_packet_buffer);
+                this->_disassembly_info.length = (int)(address - (uintptr_t)*this->_packet_buffer);
 #endif
 #if RAW_REPORT_DISAS_VAL
                 this->_disassembly_info.value = true;
@@ -92,7 +92,7 @@ void OutputManager::GiveResultToOutput(const Instruction& instruction, BuildMode
                 strncpy(this->_disassembly_info.ops, " ", RAW_DISAS_OP_BYTES);
 #endif
 #if RAW_REPORT_DISAS_LEN
-                this->_disassembly_info.length = (int)(address - (uintptr_t)this->_packet_buffer);
+                this->_disassembly_info.length = (int)(address - (uintptr_t)*this->_packet_buffer);
 #endif
 #if RAW_REPORT_DISAS_VAL
                 this->_disassembly_info.value = false;
@@ -163,12 +163,12 @@ void OutputManager::SyncFlushOutput(FILE* output_file, bool force)
         {
             this->_stdout_sync_counter = 0;
             
-            pthread_mutex_lock(this->_output_mutex);
+            pthread_mutex_lock(*this->_output_mutex);
             
             fwrite(this->_stdout_buffer, this->_stdout_buffer_pos-this->_stdout_buffer, 1, output_file);
             fflush(output_file);
             
-            pthread_mutex_unlock(this->_output_mutex);
+            pthread_mutex_unlock(*this->_output_mutex);
             
             this->_stdout_buffer_pos=this->_stdout_buffer;
         }
@@ -180,12 +180,12 @@ void OutputManager::SyncFlushOutput(FILE* output_file, bool force)
         {
             this->_stderr_sync_counter=0;
             
-            pthread_mutex_lock(this->_output_mutex);
+            pthread_mutex_lock(*this->_output_mutex);
             
             fwrite(this->_stderr_buffer, this->_stderr_buffer_pos-this->_stderr_buffer, 1, output_file);
             fflush(output_file);
             
-            pthread_mutex_unlock(this->_output_mutex);
+            pthread_mutex_unlock(*this->_output_mutex);
            
             this->_stderr_buffer_pos=this->_stderr_buffer;
         }
@@ -224,19 +224,19 @@ int OutputManager::PrintInstructionInAsmToOutput(const Instruction& instruction,
     {
         const uint8_t* code = instruction.bytes.data();
         size_t code_size = instruction.bytes.size();
-        uint64_t address = (uintptr_t)this->_packet_buffer;
+        uint64_t address = (uintptr_t)*this->_packet_buffer;
 
         if (cs_disasm_iter(this->_capstone_handle, (const uint8_t**)&code, &code_size, &address, this->_capstone_insn)) 
         {
             this->SyncPrintFormat(output_file, "%10s %-45s (%2d)", this->_capstone_insn[0].mnemonic, this->_capstone_insn[0].op_str,
-                (int)(address - (uintptr_t)this->_packet_buffer));
+                (int)(address - (uintptr_t)*this->_packet_buffer));
         }
         else
         {
             this->SyncPrintFormat(output_file, "%10s %-45s (%2d)", "(unk)", " ", 
-                (int)(address - (uintptr_t)this->_packet_buffer));
+                (int)(address - (uintptr_t)*this->_packet_buffer));
         }
-        _expected_length = (int)(address - (uintptr_t)this->_packet_buffer);
+        _expected_length = (int)(address - (uintptr_t)*this->_packet_buffer);
     }
 
     return 0;

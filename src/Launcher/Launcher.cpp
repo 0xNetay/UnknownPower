@@ -30,7 +30,7 @@ bool Launcher::Init()
 
     // Output Configure
     OutputManager::Instance().SetOutputMode(OutputMode::Text);
-    OutputManager::Instance().SetOutputMutex(_output_mutex);
+    OutputManager::Instance().SetOutputMutex(&_output_mutex);
 
     // Arg Configure
     if (!this->Configure())
@@ -51,7 +51,7 @@ bool Launcher::Init()
     // Packet Configure
     this->_packet_buffer_unaligned = malloc(PAGE_SIZE*3);
     *ProcessorManager::GetMutablePacketBuffer() = reinterpret_cast<char*>(((uintptr_t)this->_packet_buffer_unaligned + (PAGE_SIZE - 1)) & ~(PAGE_SIZE-1));
-    OutputManager::Instance().SetPacketBuffer(*ProcessorManager::GetMutablePacketBuffer());
+    OutputManager::Instance().SetPacketBuffer(ProcessorManager::GetMutablePacketBuffer());
 
     assert(!mprotect(*ProcessorManager::GetMutablePacketBuffer(), PAGE_SIZE, PROT_READ|PROT_WRITE|PROT_EXEC));
     if (ConfigManager::Instance().GetConfig().no_execute_support)
@@ -143,7 +143,7 @@ void Launcher::Run()
                 ProcessorManager::InjectInstructionToProcessor(current);
                 current.length = temp_length;
 
-                uintptr_t packet_address = uintptr_t(*ProcessorManager::GetMutablePacket());
+                uintptr_t packet_address = uintptr_t(*ProcessorManager::GetMutablePacketBuffer());
 
                 if (OutputManager::Instance().GetImmutableResult().address != (packet_address + PAGE_SIZE))
                 {

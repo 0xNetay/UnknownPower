@@ -23,13 +23,11 @@ public:
     inline void SetOutputMode(const OutputMode& output_mode) { _output_mode = output_mode; }
     inline const OutputMode& GetOutputMode() { return _output_mode; }
 
-    inline void SetOutputMutex(pthread_mutex_t* output_mutex) { _output_mutex = output_mutex; }
-    inline const pthread_mutex_t* GetImmutableOutputMutex() { return _output_mutex; }
-    inline pthread_mutex_t* GetMutableOutputMutex() { return _output_mutex; }
+    inline void SetOutputMutex(pthread_mutex_t** output_mutex) { _output_mutex = output_mutex; }
+    inline pthread_mutex_t** GetMutableOutputMutex() { return _output_mutex; }
 
-    inline void SetPacketBuffer(void* packet_buffer) { _packet_buffer = packet_buffer; }
-    inline const void* GetImmutablePacketBuffer() { return _packet_buffer; }
-    inline void* GetMutablePacketBuffer() { return _packet_buffer; }
+    inline void SetPacketBuffer(void** packet_buffer) { _packet_buffer = packet_buffer; }
+    inline void** GetMutablePacketBuffer() { return _packet_buffer; }
 
 #if USE_CAPSTONE
     inline void SetCapstoneHandler(const csh& capstone_handle) { _capstone_handle = capstone_handle; }
@@ -64,8 +62,8 @@ private:
     inline OutputManager() = default;
 
     // Outsource
-    pthread_mutex_t* _output_mutex = nullptr;
-    void*            _packet_buffer = nullptr;
+    pthread_mutex_t** _output_mutex = nullptr;
+    void**            _packet_buffer = nullptr;
 
     // Result
     Result _current_result = {};

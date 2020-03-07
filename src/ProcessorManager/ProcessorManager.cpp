@@ -207,7 +207,6 @@ void ProcessorManager::FaultHandler(int signal_number, siginfo_t* signal_info, v
     result_ptr->length = instruction_length;
     result_ptr->signum = signal_number;
     result_ptr->si_code = signal_info->si_code;
-
     result_ptr->address =
         (signal_number == SIGSEGV || signal_number==SIGBUS) ?
         static_cast<uint32_t>((uintptr_t)signal_info->si_addr) :

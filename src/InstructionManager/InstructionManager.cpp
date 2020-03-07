@@ -11,7 +11,7 @@ bool InstructionManager::Init()
     this->_current_instruction.bytes = { 0 };
     this->_current_instruction.length = 0;
     this->_current_index = -1;
-    this->_last_length = 0;
+    this->_last_length = -1;
     return true;
 }
 
@@ -353,6 +353,7 @@ bool InstructionManager::DropRanges()
     if (this->_range_marker != nullptr)
     {
         munmap(this->_range_marker, sizeof(*this->_range_marker));
+        this->_range_marker = nullptr;
     }
 
     return true;

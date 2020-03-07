@@ -47,7 +47,7 @@ private:
     // Instruction info
     Instruction _current_instruction = {};
     int _current_index = 0;
-    size_t _last_length = 0;
+    int _last_length = 0;
 
     // Range info
     Instruction* _range_marker = nullptr;
