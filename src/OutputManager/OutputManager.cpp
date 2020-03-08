@@ -40,7 +40,11 @@ void OutputManager::GiveResultToOutput(const Instruction& instruction, BuildMode
     const uint8_t* code = instruction.bytes.data();
     size_t code_size = instruction.bytes.size();
     uint64_t address = (uintptr_t)*this->_packet_buffer;
-    
+
+    static size_t result_count = 0;
+    result_count++;
+    this->SyncPrintFormat(output_file, "Result #%d: | ", result_count);
+
     switch (this->_output_mode) {
         case OutputMode::Text:
             switch (build_mode) 
@@ -48,17 +52,23 @@ void OutputManager::GiveResultToOutput(const Instruction& instruction, BuildMode
                 case BuildMode::BruteForce:
                 case BuildMode::TunnelMinMax:
                 case BuildMode::Random:
-                    this->SyncPrintFormat(output_file, " %s", _expected_length == this->_current_result.length ? " " : ".");
-                    this->SyncPrintFormat(output_file, "r: (%2d) ", this->_current_result.length);
-                    if (this->_current_result.signum==SIGILL)  { this->SyncPrintFormat(output_file, "sigill "); }
-                    if (this->_current_result.signum==SIGSEGV) { this->SyncPrintFormat(output_file, "sigsegv"); }
-                    if (this->_current_result.signum==SIGFPE)  { this->SyncPrintFormat(output_file, "sigfpe "); }
-                    if (this->_current_result.signum==SIGBUS)  { this->SyncPrintFormat(output_file, "sigbus "); }
-                    if (this->_current_result.signum==SIGTRAP) { this->SyncPrintFormat(output_file, "sigtrap"); }
-                    this->SyncPrintFormat(output_file, " %3d ", this->_current_result.si_code);
-                    this->SyncPrintFormat(output_file, " %08x ", this->_current_result.address);
+                    this->SyncPrintFormat(output_file, "Result Length: %d | Expected Length: %d | Good? %s | Signal: ",
+                            this->_current_result.length, this->_expected_length,
+                            this->_expected_length == this->_current_result.length ? "Yes" : "No");
+                    if (this->_current_result.signum==SIGILL)  { this->SyncPrintFormat(output_file, "sigill | "); }
+                    if (this->_current_result.signum==SIGSEGV) { this->SyncPrintFormat(output_file, "sigsegv | "); }
+                    if (this->_current_result.signum==SIGFPE)  { this->SyncPrintFormat(output_file, "sigfpe | "); }
+                    if (this->_current_result.signum==SIGBUS)  { this->SyncPrintFormat(output_file, "sigbus | "); }
+                    if (this->_current_result.signum==SIGTRAP) { this->SyncPrintFormat(output_file, "sigtrap | "); }
+                    this->SyncPrintFormat(output_file, "SI: %3d | ", this->_current_result.si_code);
+                    this->SyncPrintFormat(output_file, "Address: %08x | Instruction: ", this->_current_result.address);
                     this->PrintInMcToOutput(instruction, this->_current_result.length, output_file);
+#if USE_CAPSTONE
+                    this->SyncPrintFormat(output_file, "ASM: ");
+                    this->PrintInstructionInAsmToOutput(instruction, output_file);
+#endif
                     this->SyncPrintFormat(output_file, "\n");
+                    this->SyncFlushOutput(output_file, false);
                     break;
                     
                 default:
@@ -207,9 +217,18 @@ void OutputManager::PrintInstructionToOutput(const Instruction& instruction, FIL
 
 void OutputManager::PrintRangeToOutput(const InstructionRange &range, FILE* output_file)
 {
-    this->PrintInstructionToOutput(range.start, output_file);
-    this->SyncPrintFormat(output_file, ";");
-    this->PrintInstructionToOutput(range.end, output_file);
+    if (this->_output_mode == OutputMode::Text)
+    {
+        static size_t range_count = 0;
+        range_count++;
+
+        this->SyncPrintFormat(output_file, "Range  #%d: | Start: ", range_count);
+        this->PrintInstructionToOutput(range.start, output_file);
+        this->SyncPrintFormat(output_file, " | End: ");
+        this->PrintInstructionToOutput(range.end, output_file);
+        this->SyncPrintFormat(output_file, "\n");
+        this->SyncFlushOutput(output_file, false);
+    }
 }
 
 #if USE_CAPSTONE
@@ -247,19 +266,20 @@ int OutputManager::PrintInstructionInAsmToOutput(const Instruction& instruction,
 void OutputManager::Tick(const Instruction& instruction, BuildMode build_mode)
 {
     static uint64_t tick_counter = 0;
-    
+
     if (ConfigManager::Instance().GetConfig().should_show_tick) 
     {
         tick_counter++;
+        this->SyncPrintFormat(stderr, "Tick #%d: | ", tick_counter);
         
         if ((tick_counter & uint64_t(TICK_MASK)) == 0)
         {
-            this->SyncPrintFormat(stderr, "t: ");
+            this->SyncPrintFormat(stderr, "Instruction: ");
             this->PrintInMcToOutput(instruction, 8, stderr);
-            this->SyncPrintFormat(stderr, "... ");
+            this->SyncPrintFormat(stderr, " | ASM: ");
 #if USE_CAPSTONE
             this->PrintInstructionInAsmToOutput(instruction, stderr);
-            this->SyncPrintFormat(stderr, "\t");
+            this->SyncPrintFormat(stderr, " | ");
 #endif
             this->GiveResultToOutput(instruction, build_mode, stderr);
             this->SyncFlushOutput(stderr, false);

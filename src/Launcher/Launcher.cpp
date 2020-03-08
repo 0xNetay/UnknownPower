@@ -110,30 +110,11 @@ void Launcher::Run()
     // Main Loop
     while (this->_instruction_manager.BuildNextRange())
     {
-//        if (OutputManager::Instance().GetOutputMode() == OutputMode::Text)
-//        {
-//            OutputManager::Instance().SyncPrintFormat(stdout, "\t~~ RANGE (job id: %d) ~~", pid);
-//            OutputManager::Instance().PrintRangeToOutput(this->_instruction_manager.GetCurrentRange(), stdout);
-//            OutputManager::Instance().SyncPrintFormat(stdout, "\n");
-//            OutputManager::Instance().SyncFlushOutput(stdout, true);
-//        }
+        OutputManager::Instance().PrintRangeToOutput(this->_instruction_manager.GetCurrentRange(), stdout);
 
         while (this->_instruction_manager.BuildNextInstruction())
         {
             Instruction current = this->_instruction_manager.GetCurrentInstruction();
-
-            if (OutputManager::Instance().GetOutputMode() == OutputMode::Text)
-            {
-//                OutputManager::Instance().SyncPrintFormat(stdout, "\t~~ INST (job id: %d) ~~", pid);
-                OutputManager::Instance().SyncPrintFormat(stdout, "r: ");
-                OutputManager::Instance().PrintInMcToOutput(current, 8, stdout);
-                OutputManager::Instance().SyncPrintFormat(stdout, "... ");
-#if USE_CAPSTONE
-                OutputManager::Instance().PrintInstructionInAsmToOutput(instruction, stdout);
-                OutputManager::Instance().SyncPrintFormat(stdout, " ");
-#endif
-                OutputManager::Instance().SyncFlushOutput(stdout, false);
-            }
 
             size_t i;
             for (i = MIN_INSTRUCTION_LENGTH; i <= MAX_INSTRUCTION_LENGTH; i++)

@@ -111,9 +111,9 @@ bool InstructionManager::BuildNextInstruction()
             switch (OutputManager::Instance().GetOutputMode())
             {
                 case OutputMode::Text:
-                    OutputManager::Instance().SyncPrintFormat(stdout, "x: ");
+                    OutputManager::Instance().SyncPrintFormat(stdout, "Blacklist Opcode: ");
                     OutputManager::Instance().PrintInMcToOutput(this->_current_instruction, MAX_INSTRUCTION_LENGTH, stdout);
-                    OutputManager::Instance().SyncPrintFormat(stdout, "... (%s)\n", ConfigManager::Instance().GetAtOpcodeBlacklist(i).reason);
+                    OutputManager::Instance().SyncPrintFormat(stdout, " | Reason: %s\n", ConfigManager::Instance().GetAtOpcodeBlacklist(i).reason);
                     OutputManager::Instance().SyncFlushOutput(stdout, false);
                     break;
 
@@ -138,9 +138,9 @@ bool InstructionManager::BuildNextInstruction()
             switch (OutputManager::Instance().GetOutputMode())
             {
                 case OutputMode::Text:
-                    OutputManager::Instance().SyncPrintFormat(stdout, "x: ");
+                    OutputManager::Instance().SyncPrintFormat(stdout, "Blacklist Prefix: ");
                     OutputManager::Instance().PrintInMcToOutput(this->_current_instruction, MAX_INSTRUCTION_LENGTH, stdout);
-                    OutputManager::Instance().SyncPrintFormat(stdout, "... (%s)\n", ConfigManager::Instance().GetAtPrefixBlacklist(i).reason);
+                    OutputManager::Instance().SyncPrintFormat(stdout, " | Reason: %s\n", ConfigManager::Instance().GetAtPrefixBlacklist(i).reason);
                     OutputManager::Instance().SyncFlushOutput(stdout, false);
                     break;
 
@@ -162,9 +162,9 @@ bool InstructionManager::BuildNextInstruction()
         switch (OutputManager::Instance().GetOutputMode())
         {
             case OutputMode::Text:
-                OutputManager::Instance().SyncPrintFormat(stdout, "x: ");
+                OutputManager::Instance().SyncPrintFormat(stdout, " Duplicate Prefix: ");
                 OutputManager::Instance().PrintInMcToOutput(this->_current_instruction, MAX_INSTRUCTION_LENGTH, stdout);
-                OutputManager::Instance().SyncPrintFormat(stdout, "... (%s)\n", "prefix violation");
+                OutputManager::Instance().SyncPrintFormat(stdout, " | Reason: %s\n", "prefix violation");
                 OutputManager::Instance().SyncFlushOutput(stdout, false);
                 break;
 
