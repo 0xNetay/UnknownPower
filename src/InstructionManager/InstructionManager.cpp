@@ -71,8 +71,8 @@ bool InstructionManager::BuildNextInstruction()
             else // For any new call, if the last instruction found a new length, we go deeper
                 // otherwise, we found the current deepest length of the current instruction
             {
-                if (OutputManager::Instance().GetImmutableResult().length != this->_last_length &&
-                    this->_current_index < OutputManager::Instance().GetImmutableResult().length - 1)
+                if (int(OutputManager::Instance().GetImmutableResult().length) != this->_last_length &&
+                    this->_current_index < int(OutputManager::Instance().GetImmutableResult().length) - 1)
                 {
                     this->_current_index++;
                 }
@@ -97,6 +97,7 @@ bool InstructionManager::BuildNextInstruction()
             break;
 
         default:
+            printf("error: unsupported build mode, exiting immediately\n");
             assert(0);
     }
 
@@ -123,6 +124,7 @@ bool InstructionManager::BuildNextInstruction()
                     break;
 
                 default:
+                    printf("error: unsupported output mode, exiting immediately\n");
                     assert(0);
             }
             return this->BuildNextInstruction();
@@ -148,7 +150,9 @@ bool InstructionManager::BuildNextInstruction()
                     OutputManager::Instance().GetMutableResult() = {0, 0, 0, 0, 0};
                     OutputManager::Instance().GiveResultToOutput(this->_current_instruction, this->_build_mode, stdout);
                     break;
+
                 default:
+                    printf("error: unsupported output mode, exiting immediately\n");
                     assert(0);
             }
             return this->BuildNextInstruction();
@@ -174,6 +178,7 @@ bool InstructionManager::BuildNextInstruction()
                 break;
 
             default:
+                printf("error: unsupported output mode, exiting immediately\n");
                 assert(0);
         }
         return this->BuildNextInstruction();
@@ -190,10 +195,13 @@ bool InstructionManager::BuildNextInstruction()
     {
         case BuildMode::Random:
             return true;
+
         case BuildMode::BruteForce:
         case BuildMode::TunnelMinMax:
             return this->_current_index >= 0;
+
         default:
+            printf("error: unsupported build mode, exiting immediately\n");
             assert(0);
     }
 }
@@ -250,6 +258,7 @@ bool InstructionManager::BuildNextRange()
             break;
 
         default:
+            printf("error: unsupported build mode, exiting immediately\n");
             assert(0);
     }
 

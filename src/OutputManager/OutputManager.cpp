@@ -37,10 +37,6 @@ void OutputManager::PrintInMcToOutput(const Instruction& instruction, size_t ins
 
 void OutputManager::GiveResultToOutput(const Instruction& instruction, BuildMode build_mode, FILE* output_file)
 {
-    const uint8_t* code = instruction.bytes.data();
-    size_t code_size = instruction.bytes.size();
-    uint64_t address = (uintptr_t)*this->_packet_buffer;
-
     static size_t result_count = 0;
     result_count++;
     this->SyncPrintFormat(output_file, "Result #%d: | ", result_count);
@@ -72,12 +68,17 @@ void OutputManager::GiveResultToOutput(const Instruction& instruction, BuildMode
                     break;
                     
                 default:
+                    printf("error: unsupported build mode, exiting immediately\n");
                     assert(0);
             }
             break;
         
         case OutputMode::Raw:
 #if USE_CAPSTONE
+            const uint8_t* code = instruction.bytes.data();
+            size_t code_size = instruction.bytes.size();
+            uint64_t address = (uintptr_t)*this->_packet_buffer;
+
             if (cs_disasm_iter(this->_capstone_handle, (const uint8_t**)&code, &code_size, &address, this->_capstone_insn)) 
             {
 #if RAW_REPORT_DISAS_MNE
@@ -117,6 +118,7 @@ void OutputManager::GiveResultToOutput(const Instruction& instruction, BuildMode
             break;
             
         default:
+            printf("error: unsupported output mode, exiting immediately\n");
             assert(0);
     }
     this->SyncFlushOutput(stdout, false);
@@ -138,6 +140,7 @@ void OutputManager::SyncPrintFormat(FILE* output_file, const char *format, ...)
     }
     else 
     {
+        printf("error: unsupported output file, exiting immediately\n");
         assert(0);
     }
 
@@ -160,6 +163,7 @@ void OutputManager::SyncWriteBuffer(const void* output_buffer, size_t single_ele
     }
     else 
     {
+        printf("error: unsupported output file, exiting immediately\n");
         assert(0);
     }
 }
@@ -202,6 +206,7 @@ void OutputManager::SyncFlushOutput(FILE* output_file, bool force)
     }
     else
     {
+        printf("error: unsupported output file, exiting immediately\n");
         assert(0);
     }
 }

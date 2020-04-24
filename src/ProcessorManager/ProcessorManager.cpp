@@ -20,29 +20,35 @@ DummyStack dummy_stack = {};
 
 void ProcessorManager::InjectInstructionToProcessor(const Instruction& instruction)
 {
+    // Length of the preamble code section
     size_t preamble_length = (&preamble_end - &preamble_start);
+
+    // Find which is smaller, max length or given instruction
+    size_t minimum = instruction.length <= MAX_INSTRUCTION_LENGTH ? instruction.length : MAX_INSTRUCTION_LENGTH;
 
 #if !USE_TF
     preamble_length = 0;
 #endif
 
+    // Takes a piece of the memory space to be used by the preamble and injected instruction
+    // Note that this location is at the end of the executable region within our buffer (first page is executable, second is not)
     ProcessorManager::_packet =
         reinterpret_cast<char*>(ProcessorManager::_packet_buffer) + PAGE_SIZE - instruction.length - preamble_length;
 
+    // Copy the preamble code and right after it the instruction byte code into the packet (address that will be ran)
     memcpy(ProcessorManager::_packet, &preamble_start, preamble_length);
-
-    size_t minimum = instruction.length <= MAX_INSTRUCTION_LENGTH ? instruction.length : MAX_INSTRUCTION_LENGTH;
     memcpy(ProcessorManager::_packet + preamble_length, instruction.bytes.data(), minimum);
 
+    // Without this we need to blacklist any instruction that modifies esp
     if (ConfigManager::Instance().GetConfig().enable_null_access)
     {
-        /* without this we need to blacklist any instruction that modifies esp */
         void* p = NULL;
         memset(p, 0, PAGE_SIZE);
     }
 
     dummy_stack.dummy_stack_lo[0] = 0;
 
+    // Generates undefined instruction for the first time before any injection, to get the original fault context
     if (ProcessorManager::_is_first)
     {
         ProcessorManager::ConfigureSignalHandler();
@@ -56,10 +62,14 @@ void ProcessorManager::InjectInstructionToProcessor(const Instruction& instructi
 #endif
     }
 
+    // Configure our signal handler
     ProcessorManager::ConfigureSignalHandler();
 
     RegState inject_state = ConfigManager::Instance().GetRegState();
 
+    // Inject all the registers with their default state (from config manager
+    // Configure the stack pointer with our dummy stack
+    // Jump to packet - our preamble + injected opcode
 #if PROCESSOR == POWER_PC
     // TODO: POWERPC
 #elif PROCESSOR == INTEL
@@ -127,6 +137,8 @@ void ProcessorManager::InjectInstructionToProcessor(const Instruction& instructi
 			);
 #   endif
 #endif
+
+    // Set that resume label will point to here, so we will return to the end of this function after finishing the fault handler
     __asm__ __volatile__ ("\
 			.global resume   \n\
 			resume:          \n\
@@ -135,7 +147,7 @@ void ProcessorManager::InjectInstructionToProcessor(const Instruction& instructi
     ;
 }
 
-void ProcessorManager::PinCore()
+bool ProcessorManager::PinCore()
 {
     if (ConfigManager::Instance().GetConfig().force_core)
     {
@@ -145,9 +157,11 @@ void ProcessorManager::PinCore()
         if (sched_setaffinity(0, sizeof(mask), &mask))
         {
             printf("error: failed to set cpu\n");
-            exit(1);
+            return false;
         }
     }
+
+    return true;
 }
 
 void ProcessorManager::ConfigureSignalHandler()
@@ -193,15 +207,17 @@ void ProcessorManager::FaultHandler(int signal_number, siginfo_t* signal_info, v
     preamble_length = 0;
 #endif
 
-    /* make an initial estimate on the instruction length from the fault address */
+    // Make an initial estimate on the instruction length from the fault address
     uintptr_t ip_before_signal = signal_context->uc_mcontext.gregs[IP];
     int instruction_length = ip_before_signal - uintptr_t(ProcessorManager::_packet) - preamble_length;
 
+    // If something is wrong with the length, we assume it is the length of a jump instruction, or something that couldn't be determined
     if (instruction_length < 0 || instruction_length > MAX_INSTRUCTION_LENGTH)
     {
         instruction_length = JUMP_OR_UNDETERMINED_INSTRUCTION_LENGTH;
     }
 
+    // Set the result with our findings
     Result* result_ptr = &OutputManager::Instance().GetMutableResult();
     result_ptr->valid = 1;
     result_ptr->length = instruction_length;
@@ -212,7 +228,10 @@ void ProcessorManager::FaultHandler(int signal_number, siginfo_t* signal_info, v
         static_cast<uint32_t>((uintptr_t)signal_info->si_addr) :
         static_cast<uint32_t>(-1);
 
+    // Set the GREGS to the one we got from our initiated undefined instruction on first tine
     memcpy(signal_context->uc_mcontext.gregs, ProcessorManager::_fault_context.gregs, sizeof(ProcessorManager::_fault_context.gregs));
+
+    // Set the IP of our return from the interrupt to the resume label
     signal_context->uc_mcontext.gregs[IP] = (uintptr_t)&resume;
     signal_context->uc_mcontext.gregs[REG_EFL] &= ~TF;
 }

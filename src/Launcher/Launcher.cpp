@@ -41,7 +41,10 @@ bool Launcher::Init()
     srand(ConfigManager::Instance().GetConfig().seed_for_random);
 
     // Processor Configure
-    ProcessorManager::PinCore();
+    if (!ProcessorManager::PinCore())
+    {
+        return false;
+    }
 
     // Signal Stack Configure
     static char stack[SIGSTKSZ] = { 0 };
@@ -53,21 +56,34 @@ bool Launcher::Init()
     *ProcessorManager::GetMutablePacketBuffer() = reinterpret_cast<char*>(((uintptr_t)this->_packet_buffer_unaligned + (PAGE_SIZE - 1)) & ~(PAGE_SIZE-1));
     OutputManager::Instance().SetPacketBuffer(ProcessorManager::GetMutablePacketBuffer());
 
-    assert(!mprotect(*ProcessorManager::GetMutablePacketBuffer(), PAGE_SIZE, PROT_READ|PROT_WRITE|PROT_EXEC));
+    // Set the first page of our Processor Manager memory space to read write and executable
+    if (mprotect(*ProcessorManager::GetMutablePacketBuffer(), PAGE_SIZE, PROT_READ|PROT_WRITE|PROT_EXEC) != 0)
+    {
+        return false;
+    }
+
     if (ConfigManager::Instance().GetConfig().no_execute_support)
     {
-        assert(!mprotect(reinterpret_cast<char*>(*ProcessorManager::GetMutablePacketBuffer()) + PAGE_SIZE, PAGE_SIZE, PROT_READ|PROT_WRITE));
+        // If we don't allow execute on our second page, we protect it by allowing only read and write
+        if (mprotect(reinterpret_cast<char*>(*ProcessorManager::GetMutablePacketBuffer()) + PAGE_SIZE, PAGE_SIZE, PROT_READ|PROT_WRITE) != 0)
+        {
+            return false;
+        }
     }
     else
     {
-        assert(!mprotect(reinterpret_cast<char*>(*ProcessorManager::GetMutablePacketBuffer()) + PAGE_SIZE, PAGE_SIZE, PROT_NONE));
+        // If we allow execute on our second page, nothing special is done
+        if (mprotect(reinterpret_cast<char*>(*ProcessorManager::GetMutablePacketBuffer()) + PAGE_SIZE, PAGE_SIZE, PROT_NONE) != 0)
+        {
+            return false;
+        }
     }
 
 #if USE_CAPSTONE
     // Capstone Configure
     if (cs_open(CS_ARCH_X86, CS_MODE, &this->_capstone_handle) != CS_ERR_OK)
     {
-        exit(1);
+        return false;
     }
     this->_capstone_insn = cs_malloc(this->_capstone_handle);
 
@@ -84,7 +100,7 @@ bool Launcher::Init()
         if (this->_null_p == MAP_FAILED)
         {
             printf("null access requires running as root\n");
-            exit(1);
+            return false;
         }
     }
 
@@ -94,20 +110,26 @@ bool Launcher::Init()
     return true;
 }
 
-void Launcher::Run()
+bool Launcher::Run()
 {
+    // Create multiple processes to speed up the runtime
     int pid = 0;
     for (size_t i = 0; i < ConfigManager::Instance().GetConfig().jobs_count - 1; i++)
     {
         pid = fork();
-        assert(pid >= 0);
+        if (pid <= -1)
+        {
+            printf("error: failed to fork process\n");
+            return false;
+        }
+
         if (pid == 0)
         {
             break;
         }
     }
 
-    // Main Loop
+    // Main Loop -> Build a range, and then instructions within that range, which are injected and verified before printing
     while (this->_instruction_manager.BuildNextRange())
     {
         OutputManager::Instance().PrintRangeToOutput(this->_instruction_manager.GetCurrentRange(), stdout);
@@ -138,6 +160,7 @@ void Launcher::Run()
         }
     }
 
+    // Wait till all processes had finished
     if (pid != 0)
     {
         for (size_t i = 0; i < ConfigManager::Instance().GetConfig().jobs_count - 1; i++)
@@ -145,13 +168,17 @@ void Launcher::Run()
             wait(NULL);
         }
     }
+
+    return true;
 }
 
-void Launcher::Close()
+bool Launcher::Close()
 {
+    // Print any remaining output data
     OutputManager::Instance().SyncFlushOutput(stdout, true);
     OutputManager::Instance().SyncFlushOutput(stderr, true);
 
+    // Free ranges and mutexes
     this->_instruction_manager.DropRanges();
     pthread_mutex_destroy(this->_pool_mutex);
     pthread_mutex_destroy(this->_output_mutex);
@@ -161,12 +188,16 @@ void Launcher::Close()
     cs_close(&this->_capstone_handle);
 #endif
 
+    // Free null
     if (ConfigManager::Instance().GetConfig().enable_null_access)
     {
         munmap(this->_null_p, PAGE_SIZE);
     }
 
+    // Free the Processor's memory space
     free(this->_packet_buffer_unaligned);
+
+    return true;
 }
 
 bool Launcher::Configure()
@@ -183,7 +214,7 @@ bool Launcher::Configure()
         {
             case '?':
                 Launcher::PrintHelp();
-                exit(-1);
+                return false;
 
             case 'b':
                 _instruction_manager.SetBuildMode(BuildMode::BruteForce);
@@ -249,7 +280,11 @@ bool Launcher::Configure()
                     }
 
                     opcode_blacklist[j].opcode = static_cast<char*>(malloc(strlen(optarg) / 2 + 1));
-                    assert (opcode_blacklist[j].opcode);
+                    if (opcode_blacklist[j].opcode == nullptr)
+                    {
+                        printf("error: failed to allocate blacklisted opcode for the user\n");
+                        return false;
+                    }
 
                     size_t i = 0;
                     while (optarg[i*2] && optarg[i*2+1])
@@ -276,14 +311,14 @@ bool Launcher::Configure()
 
             default:
                 Launcher::PrintUsage();
-                exit(-1);
+                return false;
         }
     }
 
     if (optind != _argc)
     {
         Launcher::PrintUsage();
-        exit(1);
+        return false;
     }
 
     if (!seed_given)
