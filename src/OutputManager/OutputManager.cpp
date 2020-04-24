@@ -20,8 +20,9 @@ void OutputManager::PrintInMcToOutput(const Instruction& instruction, size_t ins
         this->SyncPrintFormat(output_file, " ");
         prefix_flag = true;
     }
-    
-    for (size_t i = 0; (i < instruction_length) && (i < MAX_INSTRUCTION_LENGTH); i++)
+
+    size_t i = 0;
+    for (; (i < instruction_length) && (i < MAX_INSTRUCTION_LENGTH); i++)
     {
         this->SyncPrintFormat(output_file, "%02x", instruction.bytes[i]);
         
@@ -32,6 +33,11 @@ void OutputManager::PrintInMcToOutput(const Instruction& instruction, size_t ins
             this->SyncPrintFormat(output_file, " ");
             prefix_flag = true;
         }
+    }
+
+    for (; i < MAX_INSTRUCTION_LENGTH; i++)
+    {
+        this->SyncPrintFormat(output_file, "00");
     }
 }
 
@@ -48,7 +54,7 @@ void OutputManager::GiveResultToOutput(const Instruction& instruction, BuildMode
                 case BuildMode::BruteForce:
                 case BuildMode::TunnelMinMax:
                 case BuildMode::Random:
-                    this->SyncPrintFormat(output_file, "Result Length: %d | Expected Length: %d | Good? %s | Signal: ",
+                    this->SyncPrintFormat(output_file, "Result Length: %d | Expected Length: %d | Good? %3s | Signal: ",
                             this->_current_result.length, this->_expected_length,
                             this->_expected_length == this->_current_result.length ? "Yes" : "No");
                     if (this->_current_result.signum==SIGILL)  { this->SyncPrintFormat(output_file, "sigill | "); }
@@ -56,11 +62,11 @@ void OutputManager::GiveResultToOutput(const Instruction& instruction, BuildMode
                     if (this->_current_result.signum==SIGFPE)  { this->SyncPrintFormat(output_file, "sigfpe | "); }
                     if (this->_current_result.signum==SIGBUS)  { this->SyncPrintFormat(output_file, "sigbus | "); }
                     if (this->_current_result.signum==SIGTRAP) { this->SyncPrintFormat(output_file, "sigtrap | "); }
-                    this->SyncPrintFormat(output_file, "SI: %3d | ", this->_current_result.si_code);
-                    this->SyncPrintFormat(output_file, "Address: %08x | Instruction: ", this->_current_result.address);
+                    this->SyncPrintFormat(output_file, "SI: %2d | ", this->_current_result.si_code);
+                    this->SyncPrintFormat(output_file, "Address: 0x%08x | Instruction: ", this->_current_result.address);
                     this->PrintInMcToOutput(instruction, this->_current_result.length, output_file);
 #if USE_CAPSTONE
-                    this->SyncPrintFormat(output_file, "ASM: ");
+                    this->SyncPrintFormat(output_file, " | ASM: ");
                     this->PrintInstructionInAsmToOutput(instruction, output_file);
 #endif
                     this->SyncPrintFormat(output_file, "\n");
@@ -74,13 +80,14 @@ void OutputManager::GiveResultToOutput(const Instruction& instruction, BuildMode
             break;
         
         case OutputMode::Raw:
+        {
 #if USE_CAPSTONE
-            const uint8_t* code = instruction.bytes.data();
+            const uint8_t *code = instruction.bytes.data();
             size_t code_size = instruction.bytes.size();
-            uint64_t address = (uintptr_t)*this->_packet_buffer;
+            uint64_t address = (uintptr_t) *this->_packet_buffer;
 
-            if (cs_disasm_iter(this->_capstone_handle, (const uint8_t**)&code, &code_size, &address, this->_capstone_insn)) 
-            {
+            if (cs_disasm_iter(this->_capstone_handle, (const uint8_t **) &code, &code_size, &address,
+                               this->_capstone_insn)) {
 #if RAW_REPORT_DISAS_MNE
                 strncpy(this->_disassembly_info.mne, this->_capstone_insn[0].mnemonic, RAW_DISAS_MNEMONIC_BYTES);
 #endif
@@ -88,14 +95,12 @@ void OutputManager::GiveResultToOutput(const Instruction& instruction, BuildMode
                 strncpy(this->_disassembly_info.ops, capstone_insn[0].op_str, RAW_DISAS_OP_BYTES);
 #endif
 #if RAW_REPORT_DISAS_LEN
-                this->_disassembly_info.length = (int)(address - (uintptr_t)*this->_packet_buffer);
+                this->_disassembly_info.length = (int) (address - (uintptr_t) *this->_packet_buffer);
 #endif
 #if RAW_REPORT_DISAS_VAL
                 this->_disassembly_info.value = true;
 #endif
-            }
-            else 
-            {
+            } else {
 #if RAW_REPORT_DISAS_MNE
                 strncpy(this->_disassembly_info.mne, "(unk)", RAW_DISAS_MNEMONIC_BYTES);
 #endif
@@ -103,7 +108,7 @@ void OutputManager::GiveResultToOutput(const Instruction& instruction, BuildMode
                 strncpy(this->_disassembly_info.ops, " ", RAW_DISAS_OP_BYTES);
 #endif
 #if RAW_REPORT_DISAS_LEN
-                this->_disassembly_info.length = (int)(address - (uintptr_t)*this->_packet_buffer);
+                this->_disassembly_info.length = (int) (address - (uintptr_t) *this->_packet_buffer);
 #endif
 #if RAW_REPORT_DISAS_VAL
                 this->_disassembly_info.value = false;
@@ -116,7 +121,7 @@ void OutputManager::GiveResultToOutput(const Instruction& instruction, BuildMode
             this->SyncWriteBuffer(instruction.bytes.data(), RAW_REPORT_INSN_BYTES, 1, stdout);
             this->SyncWriteBuffer(&this->_current_result, sizeof(this->_current_result), 1, stdout);
             break;
-            
+        }
         default:
             printf("error: unsupported output mode, exiting immediately\n");
             assert(0);
@@ -252,12 +257,12 @@ int OutputManager::PrintInstructionInAsmToOutput(const Instruction& instruction,
 
         if (cs_disasm_iter(this->_capstone_handle, (const uint8_t**)&code, &code_size, &address, this->_capstone_insn)) 
         {
-            this->SyncPrintFormat(output_file, "%10s %-45s (%2d)", this->_capstone_insn[0].mnemonic, this->_capstone_insn[0].op_str,
+            this->SyncPrintFormat(output_file, "%5s %-35s (%02d)", this->_capstone_insn[0].mnemonic, this->_capstone_insn[0].op_str,
                 (int)(address - (uintptr_t)*this->_packet_buffer));
         }
         else
         {
-            this->SyncPrintFormat(output_file, "%10s %-45s (%2d)", "(unk)", " ", 
+            this->SyncPrintFormat(output_file, "%5s %-45s (%02d)", "(unk)", " ",
                 (int)(address - (uintptr_t)*this->_packet_buffer));
         }
         _expected_length = (int)(address - (uintptr_t)*this->_packet_buffer);

@@ -12,7 +12,7 @@ SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${LINK_FLAGS}")
 add_definitions(-DINTEL=0 -DPOWER_PC=1)
 add_definitions(-DPROCESSOR=INTEL)
 
-add_definitions(-DUSE_CAPSTONE=false)
+add_definitions(-DUSE_CAPSTONE=true)
 
 include_directories(.)
 include_directories(include)
@@ -32,5 +32,5 @@ file(GLOB_RECURSE UnknownPowerSource
         ${PROJECT_SOURCE_DIR}/src/*.c
         )
 
-# target_link_libraries(UnknownPower capstone)
 add_executable(UnknownPower ${UnknownPowerSource})
+target_link_libraries(UnknownPower capstone)
