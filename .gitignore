@@ -40,7 +40,7 @@
 # *.ipr
 
 # CMake
-cmake-build-*/
+injector/cmake-build-*/
 
 # Mongo Explorer plugin
 .idea/**/mongoSettings.xml
@@ -203,3 +203,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Sifter
+sifter/data/
