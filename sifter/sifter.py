@@ -5,22 +5,13 @@ import sys
 import os
 import threading
 import time
-import curses
 import argparse
-import code
-import copy
-from ctypes import *
-from struct import *
-from collections import deque
-from binascii import hexlify
-from system import System
 from logger import dump_artifacts
-from disassembler import Disassembler
 from gui import Gui
 from tests import Tests
 from injector import Injector
-from utils import cstr2py, result_string
-from files import SYNC, LAST
+from utils import cstr2py, to_hex_string
+from files import LAST
 from poll import Poll
 
 
@@ -38,15 +29,12 @@ def cleanup(gui, poll, injector, ts, tests, command_line, args):
     if injector:
         injector.stop()
 
-    curses.nocbreak();
-    curses.echo()
-    curses.endwin()
 
     dump_artifacts(tests, injector, command_line)
 
     if args.save:
         with open(LAST, "w") as f:
-            f.write(hexlify(cstr2py(tests.r.raw_insn)).decode())
+            f.write(to_hex_string(tests.r.raw_insn))
 
     sys.exit(0)
 
@@ -134,6 +122,7 @@ def main():
     injector = Injector(args.injector_args)
     injector.start()
 
+    gui = None
     gui = Gui(ts, injector, tests, args.tick)
 
     poll = Poll(ts, injector, tests, gui, command_line, args.sync,

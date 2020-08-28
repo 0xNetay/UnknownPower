@@ -4,7 +4,7 @@ import time
 import copy
 from ctypes import sizeof
 from system import System
-from utils import cstr2py, result_string
+from utils import cstr2py, result_string, to_hex_string
 from files import SYNC
 
 
@@ -56,7 +56,6 @@ class Poll:
                 time.sleep(.1)
 
             bytes_polled = self.injector.process.stdout.readinto(self.T.r)
-            #import ipdb; ipdb.set_trace()
 
             if bytes_polled == sizeof(self.T.r):
                 self.T.ic = self.T.ic + 1
@@ -73,19 +72,20 @@ class Poll:
                     if self.search_ill and self.T.r.disas_known and self.T.r.signum == self.SIGILL:
                         error = True
                 if error:
-                    insn = cstr2py(self.T.r.raw_insn)[:self.T.r.length]
+                    insn_hex = to_hex_string(self.T.r.raw_insn[:self.T.r.length])
+                    #import ipdb; ipdb.set_trace()
                     r = copy.deepcopy(self.T.r)
                     self.T.al.appendleft(r)
-                    if insn not in self.T.ad:
+                    if insn_hex not in self.T.ad:
                         if not self.low_mem:
-                            self.T.ad[insn] = r
+                            self.T.ad[insn_hex] = r
                         self.T.ac = self.T.ac + 1
                         if self.sync:
                             with open(SYNC, "a") as f:
-                                f.write(result_string(insn, self.T.r))
+                                f.write(result_string(insn_hex, self.T.r))
             else:
                 if self.injector.process.poll() is not None:
-                    self.gui.stop()
+                    #self.gui.stop()
                     print("Injector shut down")
                     self.ts.run = False
                     import ipdb; ipdb.set_trace()
