@@ -1,4 +1,3 @@
-
 import threading
 import time
 import curses
@@ -8,18 +7,19 @@ from struct import *
 from collections import deque
 from binascii import hexlify
 from system import System
-from disassembley import Disassembler
+from disassembler import Disassembler
+from utils import cstr2py
+from files import TICK
 
-
-OUTPUT = "./data/"
-TICK = OUTPUT + "tick"
 
 # targeting python 2.6 support
 def int_to_comma(x):
-    if type(x) not in [type(0), type(0L)]:
+    if not isinstance(x, int):
         raise TypeError("Parameter must be an integer.")
+
     if x < 0:
         return '-' + int_to_comma(-x)
+
     result = ''
     while x >= 1000:
         x, r = divmod(x, 1000)
@@ -102,18 +102,14 @@ class Gui:
             self.COLOR_GREEN = curses.COLOR_GREEN
             '''
 
-            for i in xrange(0, self.GRAYS):
-                curses.init_color(
-                        self.GRAY_BASE + i,
-                        i * 1000 / (self.GRAYS - 1),
-                        i * 1000 / (self.GRAYS - 1),
-                        i * 1000 / (self.GRAYS - 1)
-                        )
-                curses.init_pair(
-                        self.GRAY_BASE + i,
-                        self.GRAY_BASE + i,
-                        self.COLOR_BLACK
-                        )
+            for i in range(0, self.GRAYS):
+                curses.init_color(self.GRAY_BASE + i,
+                                  i * 1000 // (self.GRAYS - 1),
+                                  i * 1000 // (self.GRAYS - 1),
+                                  i * 1000 // (self.GRAYS - 1))
+                curses.init_pair(self.GRAY_BASE + i,
+                                 self.GRAY_BASE + i,
+                                 self.COLOR_BLACK)
 
         else:
             self.COLOR_BLACK = curses.COLOR_BLACK
@@ -122,7 +118,7 @@ class Gui:
             self.COLOR_RED = curses.COLOR_RED
             self.COLOR_GREEN = curses.COLOR_GREEN
 
-            for i in xrange(0, self.GRAYS):
+            for i in range(0, self.GRAYS):
                 curses.init_pair(
                         self.GRAY_BASE + i,
                         self.COLOR_WHITE,
@@ -142,10 +138,10 @@ class Gui:
             return curses.color_pair(self.WHITE)
 
     def box(self, window, x, y, w, h, color):
-        for i in xrange(1, w - 1):
+        for i in range(1, w - 1):
             window.addch(y, x + i, curses.ACS_HLINE, color)
             window.addch(y + h - 1, x + i, curses.ACS_HLINE, color)
-        for i in xrange(1, h - 1):
+        for i in range(1, h - 1):
             window.addch(y + i, x, curses.ACS_VLINE, color)
             window.addch(y + i, x + w - 1, curses.ACS_VLINE, color)
         window.addch(y, x, curses.ACS_ULCORNER, color)
@@ -154,13 +150,13 @@ class Gui:
         window.addch(y + h - 1, x + w - 1, curses.ACS_LRCORNER, color)
 
     def bracket(self, window, x, y, h, color):
-        for i in xrange(1, h - 1):
+        for i in range(1, h - 1):
             window.addch(y + i, x, curses.ACS_VLINE, color)
         window.addch(y, x, curses.ACS_ULCORNER, color)
         window.addch(y + h - 1, x, curses.ACS_LLCORNER, color)
 
     def vaddstr(self, window, x, y, s, color):
-        for i in xrange(0, len(s)):
+        for i in range(0, len(s)):
             window.addch(y + i, x, s[i], color)
 
     def draw(self):
@@ -171,7 +167,7 @@ class Gui:
             left = self.sx + self.INDENT
             top = self.sy
             top_bracket_height = self.T.IL
-            top_bracket_middle = self.T.IL / 2
+            top_bracket_middle = self.T.IL // 2
             mne_width = 10
             op_width = 45
             raw_width = (16*2)
@@ -191,7 +187,7 @@ class Gui:
                         mnemonic,
                         op_str,
                         self.T.r.length,
-                        "%s" % hexlify(synth_insn)
+                        hexlify(synth_insn).decode()
                     )
                 )
 
@@ -236,7 +232,7 @@ class Gui:
                         self.stdscr.addstr(
                                 top + 1 + line,
                                 left,
-                                "%*s %-*s" % (mne_width, mnemonic, op_width, op_str), 
+                                "%*s %-*s" % (mne_width, mnemonic, op_width, op_str),
                                 self.gray(.5)
                                 )
                         # bytes
@@ -247,6 +243,7 @@ class Gui:
                                     "%s" % raw[0:length * 2],
                                     self.gray(.3)
                                     )
+
                             self.stdscr.addstr(
                                     top + 1 + line,
                                     left + (mne_width + 1) + (op_width + 1) + length * 2,
@@ -263,7 +260,7 @@ class Gui:
             ctime = time.time()
             self.time_log.append(ctime - self.last_time)
             self.last_time = ctime
-            rate = int(sum(self.delta_log)/sum(self.time_log))
+            rate = int(sum(self.delta_log) // sum(self.time_log))
 
             # render timestamp
             if self.maxx > left + (mne_width + 1) + (op_width + 1) + (raw_width + 1):
@@ -276,9 +273,9 @@ class Gui:
                         )
 
             # render injection settings
-            self.stdscr.addstr(top + 1, left - 8, "%d" % self.injector.settings.root, self.gray(.1))
+            self.stdscr.addstr(top + 1, left - 8, "%d" % self.injector.root, self.gray(.1))
             self.stdscr.addstr(top + 1, left - 7, "%s" % System.get_bit_mode().value, self.gray(.1))
-            self.stdscr.addstr(top + 1, left - 3, "%c" % self.injector.settings.synth_mode, self.gray(.5))
+            self.stdscr.addstr(top + 1, left - 3, "%c" % self.injector.synth_mode, self.gray(.5))
 
             # render injection results
             self.stdscr.addstr(top + top_bracket_middle, left - 6, "v:", self.gray(.5))
@@ -289,17 +286,17 @@ class Gui:
             self.stdscr.addstr(top + top_bracket_middle + 2, left - 4, "%2x" % self.T.r.signum)
             self.stdscr.addstr(top + top_bracket_middle + 3, left - 6, "c:", self.gray(.5))
             self.stdscr.addstr(top + top_bracket_middle + 3, left - 4, "%2x" % self.T.r.sicode)
-            
+
             # render instruction count
             self.stdscr.addstr(top + top_bracket_height + 2, left, "#", self.gray(.5))
-            self.stdscr.addstr(top + top_bracket_height + 2, left + 2, 
+            self.stdscr.addstr(top + top_bracket_height + 2, left + 2,
                     "%s" % (int_to_comma(self.T.ic)), self.gray(1))
             # render rate
-            self.stdscr.addstr(top + top_bracket_height + 3, left, 
-                    "  %d/s%s" % (rate, " " * min(rate / self.RATE_FACTOR, 100)), curses.A_REVERSE)
+            self.stdscr.addstr(top + top_bracket_height + 3, left,
+                    "  %d/s%s" % (rate, " " * min(rate // self.RATE_FACTOR, 100)), curses.A_REVERSE)
             # render artifact count
             self.stdscr.addstr(top + top_bracket_height + 4, left, "#", self.gray(.5))
-            self.stdscr.addstr(top + top_bracket_height + 4, left + 2, 
+            self.stdscr.addstr(top + top_bracket_height + 4, left + 2,
                     "%s" % (int_to_comma(self.T.ac)), curses.color_pair(self.RED))
 
             # render artifact log
@@ -312,7 +309,7 @@ class Gui:
                 try:
                     for (i, r) in enumerate(self.T.al):
                         y = top_bracket_height + 5 + i
-                        insn_hex = hexlify(cstr2py(r.raw_insn))
+                        insn_hex = hexlify(cstr2py(r.raw_insn)).decode()
 
                         # unexplainable hack to remove some of the unexplainable
                         # flicker on my console.  a bug in ncurses?  doesn't
@@ -320,14 +317,14 @@ class Gui:
                         # red.  doesn't happen if using a new random string each
                         # time; doesn't happen if using a constant string each
                         # time.  only happens with the specific implementation below.
-						#TODO: on systems with limited color settings, this
-						# makes the background look like random characters
+                        #TODO: on systems with limited color settings, this
+                        # makes the background look like random characters
                         random_string = ("%02x" % random.randint(0,100)) * (raw_width-2)
                         self.stdscr.addstr(top + 1 + y, left, random_string, curses.color_pair(self.BLACK))
 
-                        self.stdscr.addstr(top + 1 + y, left + 1, 
+                        self.stdscr.addstr(top + 1 + y, left + 1,
                                 "%s" % insn_hex[0:r.length * 2], curses.color_pair(self.RED))
-                        self.stdscr.addstr(top + 1 + y, left + 1 + r.length * 2, 
+                        self.stdscr.addstr(top + 1 + y, left + 1 + r.length * 2,
                                 "%s" % insn_hex[r.length * 2:raw_width], self.gray(.25))
                 except RuntimeError:
                     # probably the deque was modified by the poller
@@ -349,12 +346,13 @@ class Gui:
         if c == ord('p'):
             self.ts.pause = not self.ts.pause
         elif c == ord('q'):
+            print("Pressed q")
             self.ts.run = False
         elif c == ord('m'):
             self.ts.pause = True
             time.sleep(.1)
             self.injector.stop()
-            self.injector.settings.increment_synth_mode()
+            self.injector.increment_synth_mode()
             self.injector.start()
             self.ts.pause = False
 
@@ -367,7 +365,7 @@ class Gui:
             (self.maxy,self.maxx) = self.stdscr.getmaxyx()
 
             self.sx = 1
-            self.sy = max((self.maxy + 1 - (self.T.IL + self.T.UL + 5 + 2))/2, 0)
+            self.sy = max((self.maxy + 1 - (self.T.IL + self.T.UL + 5 + 2)) // 2, 0)
 
             self.checkkey()
 
@@ -380,7 +378,6 @@ class Gui:
                 self.ticks = self.ticks + 1
                 if self.ticks & self.TICK_MASK == 0:
                     with open(TICK, 'w') as f:
-                        f.write("%s" % hexlify(synth_insn))
+                        f.write("%s" % hexlify(synth_insn).decode())
 
             time.sleep(self.TIME_SLICE)
-
