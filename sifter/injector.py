@@ -23,11 +23,11 @@ class InjectorResults(ctypes.Structure):
     _fields_ = [('disas_length', ctypes.c_int),
                 ('disas_known', ctypes.c_int),
                 ('raw_insn', ctypes.c_ubyte * _get_raw_instruction_size()),
-                ('valid', ctypes.c_uint),
-                ('length', ctypes.c_uint),
-                ('signum', ctypes.c_uint),
-                ('sicode', ctypes.c_uint),
-                ('siaddr', ctypes.c_uint),
+                ('valid', ctypes.c_int),
+                ('length', ctypes.c_int),
+                ('signum', ctypes.c_int),
+                ('sicode', ctypes.c_int),
+                ('siaddr', ctypes.c_int),
 		]
 
 
@@ -55,7 +55,7 @@ class Injector:
                     " ".join(self.command_args),
                     self.synth_mode,
                     "-0" if self.root else "",
-                    self.seed
+                    0 #self.seed
                 )
         self.process = subprocess.Popen(
             "exec %s" % self.command,
@@ -65,6 +65,7 @@ class Injector:
             stderr=subprocess.PIPE,
             preexec_fn=os.setsid
             )
+        #import ipdb; ipdb.set_trace()
 
     def stop(self):
         if self.process:

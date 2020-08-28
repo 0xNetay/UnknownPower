@@ -2,7 +2,7 @@
 import sys
 import time
 from system import System
-from utils import result_string
+from utils import result_string, to_hex_string
 from files import LOG
 
 

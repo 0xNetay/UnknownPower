@@ -5,10 +5,9 @@ import random
 from ctypes import *
 from struct import *
 from collections import deque
-from binascii import hexlify
 from system import System
 from disassembler import Disassembler
-from utils import cstr2py
+from utils import cstr2py, to_hex_string
 from files import TICK
 
 
@@ -187,7 +186,7 @@ class Gui:
                         mnemonic,
                         op_str,
                         self.T.r.length,
-                        hexlify(synth_insn).decode()
+                        to_hex_string(self.T.r.raw_insn)
                     )
                 )
 
@@ -309,7 +308,7 @@ class Gui:
                 try:
                     for (i, r) in enumerate(self.T.al):
                         y = top_bracket_height + 5 + i
-                        insn_hex = hexlify(cstr2py(r.raw_insn)).decode()
+                        insn_hex = to_hex_string(r.raw_insn)
 
                         # unexplainable hack to remove some of the unexplainable
                         # flicker on my console.  a bug in ncurses?  doesn't
@@ -340,6 +339,9 @@ class Gui:
 
     def stop(self):
         self.gui_thread.join()
+        curses.nocbreak();
+        curses.echo()
+        curses.endwin()
 
     def checkkey(self):
         c = self.stdscr.getch()
@@ -378,6 +380,6 @@ class Gui:
                 self.ticks = self.ticks + 1
                 if self.ticks & self.TICK_MASK == 0:
                     with open(TICK, 'w') as f:
-                        f.write("%s" % hexlify(synth_insn).decode())
+                        f.write("%s" % to_hex_string(self.T.r.raw_insn))
 
             time.sleep(self.TIME_SLICE)
