@@ -9,7 +9,7 @@ extern IgnoredOpcode opcode_blacklist[MAX_BLACKLISTED_OPCODES];
 extern Config global_config;
 extern RegState injected_reg_state;
 
-Launcher::Launcher(int argc, char** argv) : _argc(argc), _argv(), _instruction_manager(&_pool_mutex)
+Launcher::Launcher(int argc, char** argv) : _argc(argc), _argv(argv), _instruction_manager(&_pool_mutex)
 {
 }
 

@@ -45,10 +45,10 @@ void OutputManager::GiveResultToOutput(const Instruction& instruction, BuildMode
 {
     static size_t result_count = 0;
     result_count++;
-    this->SyncPrintFormat(output_file, "Result #%d: | ", result_count);
 
     switch (this->_output_mode) {
         case OutputMode::Text:
+            this->SyncPrintFormat(output_file, "Result #%d: | ", result_count);
             switch (build_mode) 
             {
                 case BuildMode::BruteForce:
