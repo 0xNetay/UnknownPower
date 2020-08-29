@@ -6,13 +6,14 @@ import os
 import threading
 import time
 import argparse
-from logger import dump_artifacts
-from gui import Gui
+import color
+from logger import Logger
 from tests import Tests
 from injector import Injector
 from utils import cstr2py, to_hex_string
 from files import LAST
 from poll import Poll
+from errors import SifterException
 
 
 class ThreadState:
@@ -20,17 +21,9 @@ class ThreadState:
     run = True
 
 
-def cleanup(gui, poll, injector, ts, tests, command_line, args):
-    ts.run = False
-    if gui:
-        gui.stop()
-    if poll:
-        poll.stop()
+def cleanup(poll, injector, tests, command_line, args):
     if injector:
         injector.stop()
-
-
-    dump_artifacts(tests, injector, command_line)
 
     if args.save:
         with open(LAST, "w") as f:
@@ -85,18 +78,7 @@ def parse_args():
     return args, injector_args
 
 
-def main():
-    def exit_handler(signal, frame):
-        cleanup(gui, poll, injector, ts, tests, command_line, args)
-
-    injector = None
-    poll = None
-    gui = None
-
-    command_line = " ".join(sys.argv)
-
-    args, injector_args = parse_args()
-
+def validate_args(args, injector_args):
     if not args.len and not args.unk and not args.dis and not args.ill:
         print("warning: no search type (--len, --unk, --dis, --ill) specified, results will not be recorded.")
         input()
@@ -114,28 +96,37 @@ def main():
             print("no resume file found")
             sys.exit(1)
 
-    ts = ThreadState()
+
+
+def main():
+    # Register to SIGINT
+    def exit_handler(signal, frame):
+        cleanup(poll, injector, tests, command_line, args)
     signal.signal(signal.SIGINT, exit_handler)
 
-    tests = Tests()
+    # Get args
+    command_line = " ".join(sys.argv)
+    args, injector_args = parse_args()
+    validate_args(args, injector_args)
 
     injector = Injector(args.injector_args)
+
+    tests = Tests()
+    logger = Logger(args.sync, tests)
+    poll = Poll(injector, tests, logger, args.low_mem,
+                args.unk, args.len, args.dis, args.ill)
+
+    logger.print_state(command_line, injector)
     injector.start()
+    poll.run()
 
-    gui = None
-    gui = Gui(ts, injector, tests, args.tick)
-
-    poll = Poll(ts, injector, tests, gui, command_line, args.sync,
-                args.low_mem, args.unk, args.len, args.dis, args.ill)
-
-    poll.start()
-    gui.start()
-
-    while ts.run:
-        time.sleep(.1)
-
-    cleanup(gui, poll, injector, ts, tests, command_line, args)
+    cleanup(poll, injector, tests, command_line, args)
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except SifterException as e:
+        msg = color.red("Error!\n")
+        msg += str(e)
+        print(msg)

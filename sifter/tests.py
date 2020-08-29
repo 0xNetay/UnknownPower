@@ -9,7 +9,6 @@ class Tests:
     IL=20 # instruction log len
     UL=10 # artifact log len
     il = deque(maxlen=IL) # instruction log
-    al = deque(maxlen=UL) # artifact log
     ad = dict() # artifact dict
     ic = 0 # instruction count
     ac = 0 # artifact count

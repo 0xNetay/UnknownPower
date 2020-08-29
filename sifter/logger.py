@@ -1,12 +1,13 @@
 
 import sys
 import time
+from files import SYNC
 from system import System
 from utils import result_string, to_hex_string
 from files import LOG
 
 
-class Tee:
+class _Tee:
     def __init__(self, name, mode):
         self.file = open(name, mode)
         self.stdout = sys.stdout
@@ -24,30 +25,54 @@ class Tee:
         self.file.flush()
         self.stdout.flush()
 
+class Logger:
+    def __init__(self, sync, tests):
+        self._tee = _Tee(LOG, "w")
+        self._sync = sync
+        self._tests = tests
 
-def dump_artifacts(r, injector, command_line):
-    tee = Tee(LOG, "w")
-    tee.write("#\n")
-    tee.write("# %s\n" % command_line)
-    tee.write("# %s\n" % injector.command)
-    tee.write("#\n")
-    tee.write("# insn tested: %d\n" % r.ic)
-    tee.write("# artf found:  %d\n" % r.ac)
-    tee.write("# runtime:     %s\n" % r.elapsed())
-    tee.write("# seed:        %d\n" % injector.seed)
-    tee.write("# arch:        %s\n" % System.get_arch().value)
-    tee.write("# bit mode:    %s\n" % System.get_bit_mode().value)
-    tee.write("# date:        %s\n" % time.strftime("%Y-%m-%d %H:%M:%S"))
-    tee.write("#\n")
-    tee.write("# cpu:\n")
+    def __del__(self):
+        self._tee.write(f"# insn tested:     {self._tests.ic}\n")
+        self._tee.write(f"# unk insn found:  {self._tests.ac}\n")
+        self._tee.write(f"# runtime:         {self._tests.elapsed()}\n")
 
-    cpu = System.get_cpu_info()
+    def print_state(self, command_line, injector):
+        self._tee.write("#\n")
+        self._tee.write(f"# {command_line}\n")
+        self._tee.write(f"# {injector.command}\n")
+        self._tee.write("#\n")
+        self._tee.write(f"# seed:        {injector.seed}\n")
+        self._tee.write(f"# arch:        {System.get_arch().value}\n")
+        self._tee.write(f"# bit mode:    {System.get_bit_mode().value}\n")
+        self._tee.write(f"# date:        {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+        self._tee.write("#\n")
+        self._tee.write("# cpu:\n")
 
-    for l in cpu:
-        tee.write("# %s\n" % l)
+        cpu = System.get_cpu_info()
 
-    tee.write("# %s  v  l  s  c\n" % (" " * 28))
-    for k in sorted(list(r.ad)):
-        v = r.ad[k]
-        tee.write(result_string(k, v))
+        for l in cpu:
+            self._tee.write(f"# {l}\n")
 
+        self._tee.write("# {}  v  l  s  c\n".format(" " * 28))
+
+        if self._sync:
+            with open(SYNC, "w") as f:
+                f.write("#\n")
+                f.write(f"# {command_line}\n")
+                f.write(f"# {injector.command}\n")
+                f.write("#\n")
+                f.write("# cpu:\n")
+
+                for l in cpu:
+                    f.write(f"# {l}\n")
+                f.write("# {}  v  l  s  c\n".format(" " * 28))
+
+    def on_unknown_instruction(self, injector_results):
+        insn_hex = to_hex_string(injector_results.raw_insn[:injector_results.length])
+        result_str = result_string(insn_hex, injector_results)
+
+        self._tee.write(result_str)
+
+        if self._sync:
+            with open(SYNC, "a") as f:
+                f.write(result_str)

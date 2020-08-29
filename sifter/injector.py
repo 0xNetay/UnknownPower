@@ -48,7 +48,6 @@ class Injector:
         self.root = (os.geteuid() == 0)
         self.seed = random.getrandbits(32)
 
-    def start(self):
         self.command = "%s %s -%c -R %s -s %d" % \
                 (
                     INJECTOR,
@@ -57,6 +56,8 @@ class Injector:
                     "-0" if self.root else "",
                     0 #self.seed
                 )
+
+    def start(self):
         self.process = subprocess.Popen(
             "exec %s" % self.command,
             shell=True,
