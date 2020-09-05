@@ -219,7 +219,7 @@ bool InstructionManager::BuildNextRange()
             }
             else
             {
-                this->_current_search_range = TOTAL_RANGE;
+                this->_current_search_range = this->_total_range;
             }
             break;
 
@@ -228,7 +228,7 @@ bool InstructionManager::BuildNextRange()
             pthread_mutex_lock(*this->_pool_mutex);
             this->_had_started = false;
 
-            if (memcmp(this->_range_marker->bytes.data(), TOTAL_RANGE.end.bytes.data(),
+            if (memcmp(this->_range_marker->bytes.data(), this->_total_range.end.bytes.data(),
                        sizeof(this->_range_marker->bytes)) == 0)
             {
                 // reached end of range
@@ -242,13 +242,13 @@ bool InstructionManager::BuildNextRange()
                 if (!IncrementRangeForNext(this->_current_search_range.end, ConfigManager::Instance().GetConfig().range_bytes))
                 {
                     // if increment rolled over, set to end
-                    this->_current_search_range.end = TOTAL_RANGE.end;
+                    this->_current_search_range.end = this->_total_range.end;
                 }
                 else if (memcmp(this->_current_search_range.end.bytes.data(),
-                                TOTAL_RANGE.end.bytes.data(), sizeof(this->_current_search_range.end.bytes)) > 0)
+                                this->_total_range.end.bytes.data(), sizeof(this->_current_search_range.end.bytes)) > 0)
                 {
                     // if increment moved past end, set to end
-                    this->_current_search_range.end = TOTAL_RANGE.end;
+                    this->_current_search_range.end = this->_total_range.end;
                 }
 
                 *this->_range_marker= this->_current_search_range.end;
@@ -351,7 +351,7 @@ bool InstructionManager::CreateRanges()
     {
         this->_range_marker = reinterpret_cast<Instruction*>(mmap(NULL,sizeof(*this->_range_marker),
                 PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0));
-        *this->_range_marker = TOTAL_RANGE.start;
+        *this->_range_marker = this->_total_range.start;
     }
 
     return true;

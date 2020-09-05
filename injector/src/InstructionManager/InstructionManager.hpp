@@ -23,6 +23,10 @@ public:
     /* Free the ranges memory */
     bool DropRanges();
 
+    /* Access the Total Range */
+    inline const InstructionRange& GetTotalRange() { return this-> _total_range; }
+    inline void SetTotalRange(const InstructionRange& other) { this-> _total_range = other; }
+
     /* Create the next range of instructions according to the build mode */
     bool BuildNextRange();
 
@@ -66,6 +70,7 @@ private:
     int _last_length = 0;                           // Length of the previous instruction
 
     /* Range info */
+    InstructionRange _total_range = { details::START_INSTRUCTION, details::END_INSTRUCTION };
     Instruction* _range_marker = nullptr;           // Marker within a range to work with current instruction
     InstructionRange _current_search_range = {};    // Current range we build with
 

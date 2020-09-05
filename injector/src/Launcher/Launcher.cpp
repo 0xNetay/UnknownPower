@@ -266,6 +266,55 @@ bool Launcher::Configure()
                 config.allow_exploring_more_than_one_prefix_in_search = true;
                 break;
 
+            case 'i':
+                {
+                    size_t i = 0;
+                    InstructionRange range = this->_instruction_manager.GetTotalRange();
+
+                    while (optarg[i*2] && optarg[i*2+1] && i < MAX_INSTRUCTION_LENGTH)
+                    {
+                        unsigned int k;
+                        sscanf(optarg+i*2, "%02x", &k);
+                        range.start.bytes[i] = k;
+                        i++;
+                    }
+
+                    range.start.length=i;
+
+                    while (i < MAX_INSTRUCTION_LENGTH)
+                    {
+                        range.start.bytes[i] = 0;
+                        i++;
+
+                    }
+
+                    this->_instruction_manager.SetTotalRange(range);
+                }
+                break;
+
+            case 'e':
+                {
+                    size_t i = 0;
+                    InstructionRange range = this->_instruction_manager.GetTotalRange();
+
+                    while (optarg[i*2] && optarg[i*2+1] && i < MAX_INSTRUCTION_LENGTH)
+                    {
+                        unsigned int k;
+                        sscanf(optarg+i*2, "%02x", &k);
+                        range.end.bytes[i] = k;
+                        i++;
+                    }
+
+                    range.end.length=i;
+
+                    while (i < MAX_INSTRUCTION_LENGTH)
+                    {
+                        range.end.bytes[i] = 0;
+                        i++;
+                    }
+                }
+                break;
+
             case 'c':
                 config.force_core = true;
                 sscanf(optarg, "%zd", &config.core_count);
@@ -358,6 +407,8 @@ void Launcher::PrintHelp()
     printf("\t[-s seed] ........... in random search, seed (default: time(0))\n");
     printf("\t[-B brute_depth] .... in brute search, maximum search depth (default: %zu)\n", ConfigManager::Instance().GetConfig().brute_force_byte_depth);
     printf("\t[-P max_prefix] ..... maximum number of prefixes to search (default: %zu)\n", ConfigManager::Instance().GetConfig().max_explored_prefix);
+    printf("\t[-i instruction] .... instruction at which to start search, inclusive (default: 0)\n");
+    printf("\t[-e instruction] .... instruction at which to end search, exclusive (default: ff..ff)\n");
     printf("\t[-c core] ........... core on which to perform search (default: any)\n");
     printf("\t[-X blacklist] ...... blacklist the specified instruction\n");
     printf("\t[-j jobs] ........... number of simultaneous jobs to run (default: %zu)\n", ConfigManager::Instance().GetConfig().jobs_count);

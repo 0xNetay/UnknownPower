@@ -56,6 +56,4 @@ namespace details
 #endif
 }
 
-const InstructionRange TOTAL_RANGE = { details::START_INSTRUCTION, details::END_INSTRUCTION };
-
 #endif //UNKNOWNPOWER_INSTRUCTIONMANAGER_DEFINITIONS_HPP
