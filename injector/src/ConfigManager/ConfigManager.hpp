@@ -41,7 +41,7 @@ public:
     /* Sets initial values to the ignored opcode list (skipped during instruction building) */
     inline void SetOpcodeBlackList(const IgnoredOpcode (&opcode_blacklist)[MAX_BLACKLISTED_OPCODES], size_t opcode_blacklist_length)
     {
-        memcpy(_opcode_blacklist, opcode_blacklist, MAX_BLACKLISTED_OPCODES);
+        memcpy(_opcode_blacklist, opcode_blacklist, MAX_BLACKLISTED_OPCODES * sizeof(IgnoredOpcode));
         _opcode_blacklist_length = opcode_blacklist_length;
     }
 
@@ -75,7 +75,7 @@ public:
     /* Sets initial values to the ignored prefix list (skipped during instruction building) */
     inline void SetPrefixBlackList(const IgnoredPrefix (&prefix_blacklist)[MAX_BLACKLISTED_PREFIXES], size_t prefix_blacklist_length)
     {
-        memcpy(_prefix_blacklist, prefix_blacklist, MAX_BLACKLISTED_PREFIXES);
+        memcpy(_prefix_blacklist, prefix_blacklist, MAX_BLACKLISTED_PREFIXES  * sizeof(IgnoredPrefix));
         _prefix_blacklist_length = prefix_blacklist_length;
     }
 
