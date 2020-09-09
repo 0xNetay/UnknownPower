@@ -1,4 +1,4 @@
-#!/usr/bin/python3.7
+#!/usr/bin/env python3.7
 
 import signal
 import sys
@@ -11,7 +11,7 @@ from logger import Logger
 from tests import Tests
 from injector import Injector
 from utils import cstr2py, to_hex_string
-from files import LAST
+from files import get_last_file_path
 from poll import Poll
 from errors import SifterException
 
@@ -26,7 +26,7 @@ def cleanup(poll, injector, tests, command_line, args):
         injector.stop()
 
     if args.save:
-        with open(LAST, "w") as f:
+        with open(get_last_file_path(), "w") as f:
             f.write(to_hex_string(tests.r.raw_insn))
 
     sys.exit(0)
@@ -88,8 +88,8 @@ def validate_args(args, injector_args):
             print("--resume is incompatible with -i")
             sys.exit(1)
 
-        if os.path.exists(LAST):
-            with open(LAST, "r") as f:
+        if os.path.exists(get_last_file_path()):
+            with open(get_last_file_path(), "r") as f:
                 insn = f.read()
                 injector_args.extend(['-i',insn])
         else:

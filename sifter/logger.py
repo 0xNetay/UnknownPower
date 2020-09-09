@@ -1,10 +1,9 @@
 
 import sys
 import time
-from files import SYNC
+from files import get_sync_file_path, get_log_file_path
 from system import System
 from utils import result_string, to_hex_string
-from files import LOG
 
 
 class _Tee:
@@ -27,7 +26,7 @@ class _Tee:
 
 class Logger:
     def __init__(self, sync, tests):
-        self._tee = _Tee(LOG, "w")
+        self._tee = _Tee(get_log_file_path(), "w")
         self._sync = sync
         self._tests = tests
 
@@ -56,7 +55,7 @@ class Logger:
         self._tee.write("# {}  v  l  s  c\n".format(" " * 28))
 
         if self._sync:
-            with open(SYNC, "w") as f:
+            with open(get_sync_file_path(), "w") as f:
                 f.write("#\n")
                 f.write(f"# {command_line}\n")
                 f.write(f"# {injector.command}\n")
@@ -74,5 +73,5 @@ class Logger:
         self._tee.write(result_str)
 
         if self._sync:
-            with open(SYNC, "a") as f:
+            with open(get_sync_file_path(), "a") as f:
                 f.write(result_str)
