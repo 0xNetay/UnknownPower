@@ -47,12 +47,18 @@ class System:
 
     @staticmethod
     def _get_uname_process():
+        UNAME_FAILED_STR = "unknown\n"
+
         injector_pipe = subprocess.Popen(['uname', '-p'],
                                          stdout=subprocess.PIPE,
                                          stderr=subprocess.PIPE)
-        injector_bitness, errors = injector_pipe.communicate()
+        uname_output, errors = injector_pipe.communicate()
+        uname_output = uname_output.decode()
+        errors = errors.decode()
 
-        if len(errors) > 0:
-            raise Exception(f"Failed to run 'uname -p'\nError: {errors}")
+        if (len(errors) > 0) or (uname_output == UNAME_FAILED_STR):
+            raise Exception(f"Failed to run 'uname -p'\n"
+                            f"Output: {uname_output}\n"
+                            f"Error: {errors}")
 
-        return injector_bitness.decode()
+        return uname_output

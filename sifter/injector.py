@@ -4,9 +4,10 @@ import signal
 import subprocess
 import os
 import ctypes
+import pathlib
 from system import System, Arch
-
-INJECTOR = "./injector"
+from errors import InjectorDoesntExist
+from files import get_injector_file_path
 
 
 def _get_raw_instruction_size() -> int:
@@ -32,17 +33,20 @@ class InjectorResults(ctypes.Structure):
 
 
 class Injector:
-    SYNTH_MODE_RANDOM = "r"
-    SYNTH_MODE_BRUTE = "b"
-    SYNTH_MODE_TUNNEL = "t"
+    _SYNTH_MODE_RANDOM = "r"
+    _SYNTH_MODE_BRUTE = "b"
+    _SYNTH_MODE_TUNNEL = "t"
+
 
     def __init__(self, command_args):
+        self._validate_injector_bin()
+
         if "-r" in command_args:
-            self.synth_mode = self.SYNTH_MODE_RANDOM
+            self.synth_mode = Injector._SYNTH_MODE_RANDOM
         elif "-b" in command_args:
-            self.synth_mode = self.SYNTH_MODE_BRUTE
+            self.synth_mode = Injector._SYNTH_MODE_BRUTE
         elif "-t" in command_args:
-            self.synth_mode = self.SYNTH_MODE_TUNNEL
+            self.synth_mode = Injector._SYNTH_MODE_TUNNEL
 
         self.command_args = command_args
         self.root = (os.geteuid() == 0)
@@ -50,7 +54,7 @@ class Injector:
 
         self.command = "%s %s -%c -R %s -s %d" % \
                 (
-                    INJECTOR,
+                    get_injector_file_path(),
                     " ".join(self.command_args),
                     self.synth_mode,
                     "-0" if self.root else "",
@@ -66,7 +70,6 @@ class Injector:
             stderr=subprocess.PIPE,
             preexec_fn=os.setsid
             )
-        #import ipdb; ipdb.set_trace()
 
     def stop(self):
         if self.process:
@@ -76,9 +79,13 @@ class Injector:
                 pass
 
     def increment_synth_mode(self):
-        if self.synth_mode == self.SYNTH_MODE_BRUTE:
-            self.synth_mode = self.SYNTH_MODE_RANDOM
-        elif self.synth_mode == self.SYNTH_MODE_RANDOM:
-            self.synth_mode = self.SYNTH_MODE_TUNNEL
-        elif self.synth_mode == self.SYNTH_MODE_TUNNEL:
-            self.synth_mode = self.SYNTH_MODE_BRUTE
+        if self.synth_mode == Injector._SYNTH_MODE_BRUTE:
+            self.synth_mode = Injector._SYNTH_MODE_RANDOM
+        elif self.synth_mode == Injector._SYNTH_MODE_RANDOM:
+            self.synth_mode = Injector._SYNTH_MODE_TUNNEL
+        elif self.synth_mode == Injector._SYNTH_MODE_TUNNEL:
+            self.synth_mode = Injector._SYNTH_MODE_BRUTE
+
+    def _validate_injector_bin(self):
+        if not os.path.isfile(get_injector_file_path()):
+            raise InjectorDoesntExist.from_path(get_injector_file_path())

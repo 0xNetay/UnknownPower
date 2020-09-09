@@ -1,6 +1,6 @@
 sudo apt install -y gcc g++ make cmake python python-pip libcapstone3 libcapstone-dev
 
-sudo pip install capstone
+sudo pip install capstone color
 
 Get CLION from JetBrains (Recommended)
 
